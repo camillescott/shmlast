@@ -1,0 +1,10 @@
+*.swp
+shmlast/*.swp
+shmlast/__pycache__
+*.pyc
+shmlast.egg-info
+*.doit.db.db
+build/
+dist/
+.ipynb_checkpoints/
+*.csv
