@@ -13,7 +13,7 @@ def rename_task(input_fn, output_fn, name_map_fn='name_map.csv'):
     
     def cmd():
         name_map = []
-        with open(output_fn, 'wb') as output_fp:
+        with open(output_fn, 'w') as output_fp:
             for n, record in enumerate(screed.open(input_fn)):
                 new_name = 'tr{0}'.format(n)
                 output_fp.write('>{0}\n{1}\n'.format(new_name,

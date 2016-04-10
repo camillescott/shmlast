@@ -53,7 +53,8 @@ def lastdb_task(db_fn, db_out_prefix=None, prot=True, cfg=LASTDB_CFG):
 
     return {'name': name,
             'title': title_with_actions,
-            'actions': [cmd],
+            'actions': [cmd,
+                        'touch {0}'.format(db_out_prefix)],
             'file_dep': [db_fn],
             'targets': [db_out_prefix],
             'uptodate': [True],
@@ -84,7 +85,7 @@ def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
     if translate:
         cmd.append('-F' + str(cfg['frameshift']))
     if cutoff is not None:
-        cutoff = 1.0 / cutoff
+        cutoff = round(1.0 / cutoff)
         cmd.append('-D' + str(cutoff))
 
     cmd.extend([db, query, '>', out_fn])
