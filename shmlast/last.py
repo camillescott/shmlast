@@ -61,7 +61,6 @@ def lastdb_task(db_fn, db_out_prefix=None, prot=True, cfg=LASTDB_CFG):
             'clean': [clean_targets,
                       (clean_lastdb, [db_out_prefix])]}
 
-
 @doit_task
 def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
                     translate=False, cfg=LASTAL_CFG):
@@ -78,17 +77,21 @@ def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
         dict: A pydoit task.
     '''
 
-    exc = which('lastal')
-    params = cfg['params']
-    cmd = [exc]
+    lastal_exc = which('lastal')
+    parallel_exc = which('parallel-fasta')
 
+    params = cfg['params']
+    lastal_cmd = [lastal_exc]
     if translate:
-        cmd.append('-F' + str(cfg['frameshift']))
+        lastal_cmd.append('-F' + str(cfg['frameshift']))
     if cutoff is not None:
         cutoff = round(1.0 / cutoff)
-        cmd.append('-D' + str(cutoff))
+        lastal_cmd.append('-D' + str(cutoff))
+    lastal_cmd.append(db)
+    lastal_cmd = '"{0}"'.format(' '.join(lastal_cmd))
 
-    cmd.extend([db, query, '>', out_fn])
+    cmd = [parallel_exc, '-j', str(n_threads), lastal_cmd, 
+           '<', query, '>', out_fn]
     cmd = ' '.join(cmd)
 
     name = 'lastal:{0}'.format(os.path.join(out_fn))
