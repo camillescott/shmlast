@@ -2,16 +2,19 @@
 
 import argparse
 
+from shmlast.crbl import ConditionalReciprocalBestLAST as CRBL
 from shmlast.crbl import ReciprocalBestLAST as RBL
 from shmlast.util import run_tasks
 
 
 def rbl_tasks(args):
-    if args.output is None:
-        args.output = '{q}.x.{d}.rbl.csv'.format(q=args.query, d=args.database)
     rbl = RBL(args.query, args.database, args.output)
-
     return rbl.tasks()
+
+
+def crbl_tasks(args):
+    crbl = CRBL(args.query, args.database, args.output)
+    return crbl.tasks()
 
 
 def main():
@@ -28,6 +31,9 @@ def main():
 
     rbl_parser = add_common_args(subparsers.add_parser('rbl'))
     rbl_parser.set_defaults(func=rbl_tasks)
+
+    crbl_parser = add_common_args(subparsers.add_parser('crbl'))
+    crbl_parser.set_defaults(func=crbl_tasks)
 
     args = parser.parse_args()
     tasks = args.func(args)
