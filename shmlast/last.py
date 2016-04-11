@@ -113,7 +113,7 @@ class MafParser(object):
     def read(self):
         '''Read the entire file at once and return as a single DataFrame.
         '''
-        return pd.concat(self, ignore_index=True)
+        return pd.concat(iter(self), ignore_index=True)
 
     def __iter__(self):
         '''Iterator yielding DataFrames of length chunksize holding MAF alignments.
@@ -131,9 +131,11 @@ class MafParser(object):
         with open(self.filename) as fp:
             while (True):
                 try:
-                    line = fp.readline().strip()
+                    line = next(fp)
                 except StopIteration:
                     break
+                else:
+                    line = line.strip()
                 if not line:
                     continue
                 if line.startswith('#'):
@@ -154,7 +156,8 @@ class MafParser(object):
                         cur_aln[key] = float(val)
 
                     # First sequence info
-                    line = fp.readline()
+                    line = next(fp)
+                    line = line.strip()
                     tokens = line.split()
                     cur_aln['s_name'] = tokens[1]
                     cur_aln['s_start'] = int(tokens[2])
@@ -165,7 +168,8 @@ class MafParser(object):
                         cur_aln['s_aln'] = tokens[6]
 
                     # First sequence info
-                    line = fp.readline()
+                    line = next(fp)
+                    line = line.strip()
                     tokens = line.split()
                     cur_aln['q_name'] = tokens[1]
                     cur_aln['q_start'] = int(tokens[2])
