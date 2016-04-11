@@ -35,6 +35,7 @@ def main():
             install_requires = ['pandas',
                                 'numpy',
                                 ],
+            zip_safe = False,
             include_package_data = True,
             cmdclass = cmdclass  )
         
