@@ -2,8 +2,13 @@
 
 from doit.tools import run_once, create_folder, title_with_actions
 from doit.task import clean_targets, dict_to_task
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+from ficus import FigureManager
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import sys
 
 from .hits import BestHits
@@ -121,12 +126,13 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
         self.crbl_output_prefix = output_fn
         if output_fn is None:
             self.crbl_output_prefix = '{0}.crbl.{1}'.format(transcriptome_fn,
-                                                            sYdatabase_fn)
+                                                            database_fn)
             self.crbl_output_fn = self.crbl_output_prefix + '.csv'
 
         self.model_fn = model_fn
         if model_fn is None:
             self.model_fn = self.crbl_output_prefix + '.model.csv'
+        self.model_plot_fn = self.model_fn + '.plot.pdf'
 
         super(ConditionalReciprocalBestLAST, self).__init__(transcriptome_fn,
                                                             database_fn,
@@ -139,7 +145,7 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
         df.loc[df['E_s'] == 0.0, 'E_s'] = 1e-300
         df['E_s'] = -np.log10(df['E_s'])
 
-    def generate_model_task(self):
+    def crbl_fit_task(self):
 
         def model_fit(rbh_df):
             data = rbh_df[['s_aln_len', 'E']].rename(columns={'s_aln_len':'length'})
@@ -175,12 +181,42 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
         
             return comp_df[comp_df['E_s'] >= comp_df['fit']]
 
+        def plot_crbl_fit(model_df, hits_df):
+
+            plt.style.use('seaborn-ticks')
+
+            with FigureManager(self.model_plot_fn, show=False, 
+                               figsize=(10,10)) as (fig, ax):
+
+                scatter_kws = {'s': 10, 'alpha':0.7}
+                scatter_kws['c'] = sns.xkcd_rgb['ruby']
+                scatter_kws['marker'] = 'o'
+                line_kws = {'c': sns.xkcd_rgb['red wine'], 
+                            'label':'Query Hits Regression'}
+                sns.regplot('s_aln_len', 'E_s', hits_df, order=1, 
+                            label='Query Hits', scatter_kws=scatter_kws, 
+                            line_kws=line_kws, color=scatter_kws['c'], ax=ax)
+
+                scatter_kws['c'] = sns.xkcd_rgb['twilight blue']
+                scatter_kws['marker'] = 's'
+                sns.regplot('center', 'fit', model_df.reset_index(), 
+                            fit_reg=False, x_jitter=True, y_jitter=True, ax=ax,
+                            label='CRBL Fit', scatter_kws=scatter_kws, line_kws=line_kws)
+
+                leg = ax.legend(fontsize='medium', scatterpoints=3, frameon=True)
+                leg.get_frame().set_linewidth(1.0)
+
+                ax.set_xlim(model_df['center'].min(), model_df['center'].max())
+                ax.set_ylim(0, max(model_df['fit'].max(), hits_df['E'].max()) + 50)
+                ax.set_title('CRBL Fit')
+
         def cmd():
             rbh_df = pd.read_csv(self.output_fn)
             hits_df = pd.read_csv(self.translated_x_db_fn + '.csv')
 
             model, data = model_fit(rbh_df)
             crbl_df = filter_from_model(model, hits_df, rbh_df, scale_evalue=True)
+            plot_crbl_fit(model, hits_df)
 
             del crbl_df['center']
             del crbl_df['left']
@@ -201,7 +237,9 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
               'file_dep': [self.output_fn, 
                            self.translated_x_db_fn + '.csv',
                            self.db_x_translated_fn + '.csv'],
-              'targets': [self.crbl_output_fn, self.model_fn],
+              'targets': [self.crbl_output_fn, 
+                          self.model_fn, 
+                          self.model_plot_fn],
               'clean': [clean_targets]}
 
         return dict_to_task(td)
@@ -209,5 +247,5 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
     def tasks(self):
         for tsk in super(ConditionalReciprocalBestLAST, self).tasks():
             yield tsk
-        yield self.generate_model_task()
+        yield self.crbl_fit_task()
         
