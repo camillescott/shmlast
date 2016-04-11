@@ -131,7 +131,7 @@ class MafParser(object):
         with open(self.filename) as fp:
             while (True):
                 try:
-                    line = fp.next().strip()
+                    line = fp.readline().strip()
                 except StopIteration:
                     break
                 if not line:
@@ -154,7 +154,7 @@ class MafParser(object):
                         cur_aln[key] = float(val)
 
                     # First sequence info
-                    line = fp.next()
+                    line = fp.readline()
                     tokens = line.split()
                     cur_aln['s_name'] = tokens[1]
                     cur_aln['s_start'] = int(tokens[2])
@@ -165,7 +165,7 @@ class MafParser(object):
                         cur_aln['s_aln'] = tokens[6]
 
                     # First sequence info
-                    line = fp.next()
+                    line = fp.readline()
                     tokens = line.split()
                     cur_aln['q_name'] = tokens[1]
                     cur_aln['q_start'] = int(tokens[2])
