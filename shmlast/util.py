@@ -38,7 +38,11 @@ def run_tasks(tasks, args, config={'verbosity': 2}):
     return DoitMain(Loader()).run(args)
 
 
-def which(program):
+class DependencyError(RuntimeError):
+    pass
+
+
+def which(program, raise_err=True):
     '''Checks whether the given program (or program path) is valid and
     executable.
 
@@ -66,6 +70,9 @@ def which(program):
             if is_exe(exe_file):
                 return exe_file
 
-    return None
+    if raise_err:
+        raise DependencyError('{0} not found; is it installed?'.format(program))
+    else:
+        return None
 
 
