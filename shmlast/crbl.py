@@ -2,6 +2,8 @@
 
 from doit.tools import run_once, create_folder, title_with_actions
 from doit.task import clean_targets, dict_to_task
+import numpy as np
+import pandas as pd
 import sys
 
 from .hits import BestHits
@@ -30,7 +32,7 @@ class ReciprocalBestLAST(object):
             self.output_fn = '{0}.rbl.{1}.csv'.format(self.transcriptome_fn,
                                                       self.database_fn)
 
-        self.bh = BestHits(comparison_cols=['E', 'q_aln_len'])
+        self.bh = BestHits(comparison_cols=['E', 'EG2'])
 
 
     def reciprocal_best_last_task(self):
@@ -50,6 +52,8 @@ class ReciprocalBestLAST(object):
                           inplace=True)
             dvq_df['ID'] = dvq_df.index
             
+            qvd_df.to_csv(self.translated_x_db_fn + '.csv', index=False)
+            dvq_df.to_csv(self.db_x_translated_fn + '.csv', index=False)
             self.bh.reciprocal_best_hits(qvd_df, dvq_df).to_csv(self.output_fn,
                                                                 index=False)
 
@@ -58,7 +62,9 @@ class ReciprocalBestLAST(object):
               'actions': [cmd],
               'file_dep': [self.translated_x_db_fn,
                            self.db_x_translated_fn],
-              'targets': [self.output_fn],
+              'targets': [self.output_fn,
+                          self.translated_x_db_fn + '.csv',
+                          self.db_x_translated_fn + '.csv'],
               'clean': [clean_targets]}
         
         return dict_to_task(td)
@@ -109,12 +115,18 @@ class ReciprocalBestLAST(object):
 class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
 
     def __init__(self, transcriptome_fn, database_fn, output_fn=None,
-                 cutoff=.00001, n_threads=1):
+                 model_fn=None, cutoff=.00001, n_threads=1):
 
         self.crbl_output_fn = output_fn
+        self.crbl_output_prefix = output_fn
         if output_fn is None:
-            self.crbl_output_fn = '{0}.crbl.{1}.csv'.format(self.transcriptome_fn,
-                                                  self.database_fn)
+            self.crbl_output_prefix = '{0}.crbl.{1}'.format(transcriptome_fn,
+                                                            sYdatabase_fn)
+            self.crbl_output_fn = self.crbl_output_prefix + '.csv'
+
+        self.model_fn = model_fn
+        if model_fn is None:
+            self.model_fn = self.crbl_output_prefix + '.model.csv'
 
         super(ConditionalReciprocalBestLAST, self).__init__(transcriptome_fn,
                                                             database_fn,
@@ -130,10 +142,9 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
     def generate_model_task(self):
 
         def model_fit(rbh_df):
-            cols = {'s_aln_len_A': 'length', 'E_A': 'E'}
-            data = rbh_df[cols.keys()].rename(columns=cols)
+            data = rbh_df[['s_aln_len', 'E']].rename(columns={'s_aln_len':'length'})
             data.sort_values('length', inplace=True)
-            scale_evalue(data)
+            self.scale_evalue(data)
             
             # create a DataFrame for the model, staring with the alignment lengths
             fit = pd.DataFrame(np.arange(10, data['length'].max()), 
@@ -157,31 +168,46 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
         def filter_from_model(model_df, hits_df, rbh_df, scale_evalue=False):
         
             if scale_evalue:
-                scale_evalue(hits_df) 
+                self.scale_evalue(hits_df) 
             
-            comp_df = pd.merge(hits_df[hits_df['ID'].isin(rbh_df['ID_A']) == False], model_df, 
+            comp_df = pd.merge(hits_df[hits_df['ID'].isin(rbh_df['ID']) == False], model_df, 
                                left_on='s_aln_len', right_on='center')
         
             return comp_df[comp_df['E_s'] >= comp_df['fit']]
 
         def cmd():
             rbh_df = pd.read_csv(self.output_fn)
-            hits_df = MafParser(self.translated_x_db_fn).read()
+            hits_df = pd.read_csv(self.translated_x_db_fn + '.csv')
 
             model, data = model_fit(rbh_df)
-            crbl_df = filter_from_model(model, hits_df, scale_evalue=True)
+            crbl_df = filter_from_model(model, hits_df, rbh_df, scale_evalue=True)
 
-            # get subset of columns in rbh_df matching the crbl_df,
-            # rename them and concat results
-            rename = {}
-            for col in crbl_df:
-                if col + '_A' in rbh_df:
-                    rename[col +'_A'] = col
-                else:
-                    rename[col] = col
-            reciprocals = pd.concat([rbh_df.rename(columns=rename)[rename.values()], crbl_df],
-                                    axis=1)
+            del crbl_df['center']
+            del crbl_df['left']
+            del crbl_df['right']
+            del crbl_df['fit']
+            del crbl_df['size']
+            del crbl_df['translated_q_name']
+
+            self.scale_evalue(rbh_df)
+            reciprocals = pd.concat([rbh_df, crbl_df], axis=0)
             # save results
             reciprocals.to_csv(self.crbl_output_fn, index=False)
+            model.to_csv(self.model_fn, index=False)
 
+        td = {'name': 'conditional_reciprocal_best_last',
+              'title': title_with_actions,
+              'actions': [cmd],
+              'file_dep': [self.output_fn, 
+                           self.translated_x_db_fn + '.csv',
+                           self.db_x_translated_fn + '.csv'],
+              'targets': [self.crbl_output_fn, self.model_fn],
+              'clean': [clean_targets]}
 
+        return dict_to_task(td)
+
+    def tasks(self):
+        for tsk in super(ConditionalReciprocalBestLAST, self).tasks():
+            yield tsk
+        yield self.generate_model_task()
+        
