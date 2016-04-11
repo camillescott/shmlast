@@ -67,6 +67,7 @@ class BestHits(object):
         rbh_df = rbh_df[(rbh_df[self.query_name_col+'_A'] == rbh_df[self.subject_name_col+'_B'])]
 
         # Renamed columns after join
+        '''
         rename = { self.query_name_col + '_A': self.query_name_col,
                    self.subject_name_col + '_A': self.subject_name_col,
                    self.query_length_col + '_A',
@@ -82,7 +83,12 @@ class BestHits(object):
                                left_len_col: self.query_length_col,
                                right_len_col: self.subject_length_col},
                       inplace=True)
-        
-        return rbh_df
+        '''
+
+        rename_d = dict(zip(list(aln_df_A.columns), 
+                        [a for a,_, _ in [c.rpartition('_') for c in aln_df_A.columns]]))
+        rbh_df.rename(columns=rename_d, inplace=True)
+
+        return rbh_df[rename_d.values()]
 
 
