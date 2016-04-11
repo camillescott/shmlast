@@ -67,28 +67,17 @@ class BestHits(object):
         rbh_df = rbh_df[(rbh_df[self.query_name_col+'_A'] == rbh_df[self.subject_name_col+'_B'])]
 
         # Renamed columns after join
-        '''
-        rename = { self.query_name_col + '_A': self.query_name_col,
-                   self.subject_name_col + '_A': self.subject_name_col,
-                   self.query_length_col + '_A',
-                   right_q_col: self.query_name_col + '_B',
-                   right_s_col: self.subject_name_col + '_B',
-                   right_len_col: self.query_length_col + '_B'}
+        if drop_B:
+            rename_d = {}
+            for rbh_col in rbh_df.columns:
+                trimmed_col, _, _ = rbh_col.rpartition('_')
+                if rbh_col.endswith('_A'):
+                    rename_d[rbh_col] = trimmed_col
 
-        # Drop extra columns and rename for clarity
-        del rbh_df[left_s_col]
-        del rbh_df[right_s_col]
-        rbh_df.rename(columns={left_q_col: self.query_name_col, 
-                               right_q_col: self.subject_name_col,
-                               left_len_col: self.query_length_col,
-                               right_len_col: self.subject_length_col},
-                      inplace=True)
-        '''
+            rbh_df.rename(columns=rename_d, inplace=True)
 
-        rename_d = dict(zip(list(aln_df_A.columns), 
-                        [a for a,_, _ in [c.rpartition('_') for c in aln_df_A.columns]]))
-        rbh_df.rename(columns=rename_d, inplace=True)
-
-        return rbh_df[rename_d.values()]
+            return rbh_df[list(rename_d.values()) + ['q_frame']]
+        else:
+            return rbh_df
 
 
