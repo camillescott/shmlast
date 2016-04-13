@@ -4,17 +4,22 @@ import argparse
 
 from shmlast.crbl import ConditionalReciprocalBestLAST as CRBL
 from shmlast.crbl import ReciprocalBestLAST as RBL
-from shmlast.util import run_tasks
+from shmlast.util import prog_string, run_tasks
 from shmlast import __version__
 
 
 def rbl_tasks(args):
+    print(prog_string('Reciprocal Best LAST', 
+                      __version__, args.action))
     rbl = RBL(args.query, args.database, args.output, 
               n_threads=args.n_threads, cutoff=args.evalue_cutoff)
     return rbl.tasks()
 
 
 def crbl_tasks(args):
+    print(prog_string('Conditional Reciprocal Best LAST', 
+                      __version__, args.action))
+
     crbl = CRBL(args.query, args.database, args.output,
                 n_threads=args.n_threads, cutoff=args.evalue_cutoff)
     return crbl.tasks()

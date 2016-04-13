@@ -27,6 +27,18 @@ def task_str(task):
                                                          task.targets)
 
 
+def prog_string(subcommand, version, action):
+    s = ['shmlast {0} -- Camille Scott, 2016'.format(version)]
+    s.append('\n')
+    s.append(len(s[0]) * '-')
+    s.append('\n')
+    s.append('subcommand: {0}'.format(subcommand))
+    s.append('\n')
+    s.append('doit action: {0}'.format(action))
+    s.append('\n\n')
+    return ''.join(s)
+
+
 def run_tasks(tasks, args, config={'verbosity': 2}):
    
     tasks = list(tasks)
@@ -38,12 +50,14 @@ def run_tasks(tasks, args, config={'verbosity': 2}):
    
     return DoitMain(Loader()).run(args)
 
+
 class ShortenedPythonAction(PythonInteractiveAction):
 
     def __str__(self):
         fullname = str(self.py_callable)[1:].split(' at ')[0]
         _, _, shortname = fullname.rpartition('.')
         return "Python: %s" % shortname
+
 
 class DependencyError(RuntimeError):
     pass
@@ -81,5 +95,3 @@ def which(program, raise_err=True):
         raise DependencyError('{0} not found; is it installed?'.format(program))
     else:
         return None
-
-
