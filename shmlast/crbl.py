@@ -1,13 +1,16 @@
 #/usr/bin/env python3
 
 from doit.tools import run_once, create_folder, title_with_actions
+from doit.tools import PythonInteractiveAction
 from doit.task import clean_targets, dict_to_task
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 from ficus import FigureManager
 import numpy as np
+from os.path import basename as base
 import pandas as pd
+import pyprind
 import seaborn as sns
 import sys
 
@@ -28,14 +31,14 @@ class ReciprocalBestLAST(object):
         self.n_threads = n_threads
         self.cutoff = cutoff
 
-        self.db_x_translated_fn = '{0}.x.{1}.maf'.format(self.database_fn,
-                                                            self.translated_fn)
-        self.translated_x_db_fn = '{0}.x.{1}.maf'.format(self.translated_fn,
-                                                            self.database_fn)
+        self.db_x_translated_fn = '{0}.x.{1}.maf'.format(base(self.database_fn),
+                                                         base(self.translated_fn))
+        self.translated_x_db_fn = '{0}.x.{1}.maf'.format(base(self.translated_fn),
+                                                         base(self.database_fn))
         self.output_fn = output_fn
         if self.output_fn is None:
-            self.output_fn = '{0}.rbl.{1}.csv'.format(self.transcriptome_fn,
-                                                      self.database_fn)
+            self.output_fn = '{0}.rbl.{1}.csv'.format(base(self.transcriptome_fn),
+                                                      base(self.database_fn))
 
         self.bh = BestHits(comparison_cols=['E', 'EG2'])
 
@@ -125,8 +128,8 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
         self.crbl_output_fn = output_fn
         self.crbl_output_prefix = output_fn
         if output_fn is None:
-            self.crbl_output_prefix = '{0}.crbl.{1}'.format(transcriptome_fn,
-                                                            database_fn)
+            self.crbl_output_prefix = '{0}.crbl.{1}'.format(base(transcriptome_fn),
+                                                            base(database_fn))
             self.crbl_output_fn = self.crbl_output_prefix + '.csv'
 
         self.model_fn = model_fn
@@ -163,11 +166,15 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
             fit['left'] = fit['center'] - fit['size']
             fit['right'] = fit['center'] + fit['size']
             
+            bar = pyprind.ProgBar(len(fit), width=80, monitor=True)
             # do the fitting: it's just a sliding window with an increasing size
             def bin_mean(fit_row, df):
+                bar.update()
                 hits = df[(df['length'] >= fit_row.left) & (df['length'] < fit_row.right)]
                 return hits['E_s'].mean()
             fit['fit'] = fit.apply(bin_mean, args=(data,), axis=1)
+            #print('\n'.join(['\t' + ln for ln in str(bar).split('\n')]))
+            #print('Completed fitting.')
             
             return fit.dropna(), data
 
@@ -233,7 +240,7 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
 
         td = {'name': 'conditional_reciprocal_best_last',
               'title': title_with_actions,
-              'actions': [cmd],
+              'actions': [PythonInteractiveAction(cmd)],
               'file_dep': [self.output_fn, 
                            self.translated_x_db_fn + '.csv',
                            self.db_x_translated_fn + '.csv'],
