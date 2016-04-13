@@ -90,8 +90,8 @@ def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
     lastal_cmd.append(db)
     lastal_cmd = '"{0}"'.format(' '.join(lastal_cmd))
 
-    cmd = [parallel_exc, '-j', str(n_threads), lastal_cmd, 
-           '<', query, '>', out_fn]
+    cmd = [parallel_exc, '--no-notice', '-j', str(n_threads), 
+            lastal_cmd, '<', query, '>', out_fn]
     cmd = ' '.join(cmd)
 
     name = 'lastal:{0}'.format(os.path.join(out_fn))
