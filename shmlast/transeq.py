@@ -6,12 +6,13 @@ import pandas as pd
 import screed
 
 from .util import create_doit_task as doit_task
+from .util import ShortenedPythonAction
 
 
 @doit_task
 def rename_task(input_fn, output_fn, name_map_fn='name_map.csv'):
     
-    def cmd():
+    def rename_input():
         name_map = []
         with open(output_fn, 'w') as output_fp:
             for n, record in enumerate(screed.open(input_fn)):
@@ -26,7 +27,7 @@ def rename_task(input_fn, output_fn, name_map_fn='name_map.csv'):
 
     return {'name': 'rename_sequences',
             'title': title_with_actions,
-            'actions': [cmd],
+            'actions': [ShortenedPythonAction(rename_input)],
             'targets': [output_fn, name_map_fn],
             'file_dep': [input_fn],
             'clean': [clean_targets]}

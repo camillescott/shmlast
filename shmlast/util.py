@@ -3,6 +3,7 @@
 import os
 
 from doit.tools import run_once, create_folder, title_with_actions, LongRunning
+from doit.tools import PythonInteractiveAction
 from doit.task import clean_targets, dict_to_task
 from doit.cmd_base import TaskLoader
 from doit.doit_cmd import DoitMain
@@ -37,6 +38,12 @@ def run_tasks(tasks, args, config={'verbosity': 2}):
    
     return DoitMain(Loader()).run(args)
 
+class ShortenedPythonAction(PythonInteractiveAction):
+
+    def __str__(self):
+        fullname = str(self.py_callable)[1:].split(' at ')[0]
+        _, _, shortname = fullname.rpartition('.')
+        return "Python: %s" % shortname
 
 class DependencyError(RuntimeError):
     pass

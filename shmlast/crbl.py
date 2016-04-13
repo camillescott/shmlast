@@ -1,7 +1,6 @@
 #/usr/bin/env python3
 
 from doit.tools import run_once, create_folder, title_with_actions
-from doit.tools import PythonInteractiveAction
 from doit.task import clean_targets, dict_to_task
 import matplotlib as mpl
 mpl.use('Agg')
@@ -17,6 +16,7 @@ import sys
 from .hits import BestHits
 from .last import lastdb_task, lastal_task, MafParser
 from .transeq import transeq_task, rename_task
+from .util import ShortenedPythonAction
 
 class ReciprocalBestLAST(object):
 
@@ -45,7 +45,7 @@ class ReciprocalBestLAST(object):
 
     def reciprocal_best_last_task(self):
         
-        def cmd():
+        def reciprocals():
             qvd_df = MafParser(self.translated_x_db_fn).read()
             qvd_df[['qg_name', 'q_frame']] = qvd_df.q_name.str.partition('_')[[0,2]]
             qvd_df.rename(columns={'q_name': 'translated_q_name',
@@ -67,7 +67,7 @@ class ReciprocalBestLAST(object):
 
         td = {'name': 'reciprocal_best_last',
               'title': title_with_actions,
-              'actions': [cmd],
+              'actions': [ShortenedPythonAction(reciprocals)],
               'file_dep': [self.translated_x_db_fn,
                            self.db_x_translated_fn],
               'targets': [self.output_fn,
@@ -150,10 +150,16 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
 
     def crbl_fit_task(self):
 
-        def model_fit(rbh_df):
-            data = rbh_df[['s_aln_len', 'E']].rename(columns={'s_aln_len':'length'})
+        def load_files():
+            self.rbh_df = pd.read_csv(self.output_fn)
+            self.scale_evalue(self.rbh_df)
+
+            self.hits_df = pd.read_csv(self.translated_x_db_fn + '.csv')
+            self.scale_evalue(self.hits_df)
+
+        def model_fit():
+            data = self.rbh_df[['s_aln_len', 'E_s']].rename(columns={'s_aln_len':'length'})
             data.sort_values('length', inplace=True)
-            self.scale_evalue(data)
             
             # create a DataFrame for the model, staring with the alignment lengths
             fit = pd.DataFrame(np.arange(10, data['length'].max()), 
@@ -176,19 +182,38 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
             #print('\n'.join(['\t' + ln for ln in str(bar).split('\n')]))
             #print('Completed fitting.')
             
-            return fit.dropna(), data
+            self.model_df = fit.dropna()
+            self.model_df.to_csv(self.model_fn, index=False)
 
-        def filter_from_model(model_df, hits_df, rbh_df, scale_evalue=False):
-        
-            if scale_evalue:
-                self.scale_evalue(hits_df) 
+        td = {'name': 'fit_crbl_model',
+              'title': title_with_actions,
+              'actions': [ShortenedPythonAction(load_files),
+                          ShortenedPythonAction(model_fit)],
+              'file_dep': [self.output_fn, 
+                           self.translated_x_db_fn + '.csv',
+                           self.db_x_translated_fn + '.csv'],
+              'targets': [self.model_fn],
+              'clean': [clean_targets]}
+
+        return dict_to_task(td)
+
+    def crbl_filter_task(self):
+
+        def filter_from_model(): 
             
-            comp_df = pd.merge(hits_df[hits_df['ID'].isin(rbh_df['ID']) == False], model_df, 
-                               left_on='s_aln_len', right_on='center')
+            comp_df = pd.merge(self.hits_df[self.hits_df['ID'].isin(self.rbh_df['ID']) == False], 
+                               self.model_df, left_on='s_aln_len', right_on='center')
         
-            return comp_df[comp_df['E_s'] >= comp_df['fit']]
+            self.crbl_df = comp_df[comp_df['E_s'] >= comp_df['fit']]
 
-        def plot_crbl_fit(model_df, hits_df):
+            del self.crbl_df['center']
+            del self.crbl_df['left']
+            del self.crbl_df['right']
+            del self.crbl_df['fit']
+            del self.crbl_df['size']
+            del self.crbl_df['translated_q_name']
+
+        def plot_crbl_fit():
 
             plt.style.use('seaborn-ticks')
 
@@ -200,52 +225,37 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
                 scatter_kws['marker'] = 'o'
                 line_kws = {'c': sns.xkcd_rgb['red wine'], 
                             'label':'Query Hits Regression'}
-                sns.regplot('s_aln_len', 'E_s', hits_df, order=1, 
+                sns.regplot('s_aln_len', 'E_s', self.hits_df, order=1, 
                             label='Query Hits', scatter_kws=scatter_kws, 
                             line_kws=line_kws, color=scatter_kws['c'], ax=ax)
 
                 scatter_kws['c'] = sns.xkcd_rgb['twilight blue']
                 scatter_kws['marker'] = 's'
-                sns.regplot('center', 'fit', model_df.reset_index(), 
+                sns.regplot('center', 'fit', self.model_df, 
                             fit_reg=False, x_jitter=True, y_jitter=True, ax=ax,
                             label='CRBL Fit', scatter_kws=scatter_kws, line_kws=line_kws)
 
                 leg = ax.legend(fontsize='medium', scatterpoints=3, frameon=True)
                 leg.get_frame().set_linewidth(1.0)
 
-                ax.set_xlim(model_df['center'].min(), model_df['center'].max())
-                ax.set_ylim(0, max(model_df['fit'].max(), hits_df['E'].max()) + 50)
+                ax.set_xlim(self.model_df['center'].min(), self.model_df['center'].max())
+                ax.set_ylim(0, max(self.model_df['fit'].max(), self.hits_df['E'].max()) + 50)
                 ax.set_title('CRBL Fit')
 
-        def cmd():
-            rbh_df = pd.read_csv(self.output_fn)
-            hits_df = pd.read_csv(self.translated_x_db_fn + '.csv')
-
-            model, data = model_fit(rbh_df)
-            crbl_df = filter_from_model(model, hits_df, rbh_df, scale_evalue=True)
-            plot_crbl_fit(model, hits_df)
-
-            del crbl_df['center']
-            del crbl_df['left']
-            del crbl_df['right']
-            del crbl_df['fit']
-            del crbl_df['size']
-            del crbl_df['translated_q_name']
-
-            self.scale_evalue(rbh_df)
-            reciprocals = pd.concat([rbh_df, crbl_df], axis=0)
-            # save results
+        def save_results():
+            reciprocals = pd.concat([self.rbh_df, self.crbl_df], axis=0)
             reciprocals.to_csv(self.crbl_output_fn, index=False)
-            model.to_csv(self.model_fn, index=False)
 
-        td = {'name': 'conditional_reciprocal_best_last',
+        td = {'name': 'filter_crbl_hits',
               'title': title_with_actions,
-              'actions': [PythonInteractiveAction(cmd)],
+              'actions': [ShortenedPythonAction(filter_from_model),
+                          ShortenedPythonAction(plot_crbl_fit),
+                          ShortenedPythonAction(save_results)],
               'file_dep': [self.output_fn, 
                            self.translated_x_db_fn + '.csv',
-                           self.db_x_translated_fn + '.csv'],
+                           self.db_x_translated_fn + '.csv',
+                           self.model_fn],
               'targets': [self.crbl_output_fn, 
-                          self.model_fn, 
                           self.model_plot_fn],
               'clean': [clean_targets]}
 
@@ -255,4 +265,5 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
         for tsk in super(ConditionalReciprocalBestLAST, self).tasks():
             yield tsk
         yield self.crbl_fit_task()
+        yield self.crbl_filter_task()
         
