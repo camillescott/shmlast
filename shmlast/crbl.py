@@ -21,7 +21,7 @@ from .util import ShortenedPythonAction
 class ReciprocalBestLAST(object):
 
     def __init__(self, transcriptome_fn, database_fn, output_fn=None,
-                 cutoff=.00001, n_threads=1):
+                 cutoff=.00001, n_threads=1, n_nodes=None, use_existing_db=None):
 
         self.transcriptome_fn = transcriptome_fn
         self.renamed_fn = self.transcriptome_fn + '.renamed'
@@ -30,6 +30,7 @@ class ReciprocalBestLAST(object):
         self.database_fn = database_fn
         self.n_threads = n_threads
         self.cutoff = cutoff
+        self.use_existing_db = use_existing_db
 
         self.db_x_translated_fn = '{0}.x.{1}.maf'.format(base(self.database_fn),
                                                          base(self.translated_fn))
@@ -37,8 +38,8 @@ class ReciprocalBestLAST(object):
                                                          base(self.database_fn))
         self.output_fn = output_fn
         if self.output_fn is None:
-            self.output_fn = '{0}.rbl.{1}.csv'.format(base(self.transcriptome_fn),
-                                                      base(self.database_fn))
+            self.output_fn = '{0}.x.{1}.rbl.csv'.format(base(self.transcriptome_fn),
+                                                        base(self.database_fn))
 
         self.bh = BestHits(comparison_cols=['E', 'EG2'])
 
@@ -92,7 +93,8 @@ class ReciprocalBestLAST(object):
 
     def format_database_task(self):
         return lastdb_task(self.database_fn,
-                           prot=True)
+                           prot=True,
+                           use_existing=self.use_existing_db)
 
     def align_transcriptome_task(self):
         return lastal_task(self.translated_fn,
@@ -123,12 +125,12 @@ class ReciprocalBestLAST(object):
 class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
 
     def __init__(self, transcriptome_fn, database_fn, output_fn=None,
-                 model_fn=None, cutoff=.00001, n_threads=1):
+                 model_fn=None, cutoff=.00001, n_threads=1, use_existing_db=True):
 
         self.crbl_output_fn = output_fn
         self.crbl_output_prefix = output_fn
         if output_fn is None:
-            self.crbl_output_prefix = '{0}.crbl.{1}'.format(base(transcriptome_fn),
+            self.crbl_output_prefix = '{0}.x.{1}.crbl'.format(base(transcriptome_fn),
                                                             base(database_fn))
             self.crbl_output_fn = self.crbl_output_prefix + '.csv'
 
@@ -141,7 +143,8 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
                                                             database_fn,
                                                             output_fn=None,
                                                             cutoff=cutoff,
-                                                            n_threads=n_threads)
+                                                            n_threads=n_threads,
+                                                            use_existing_db=use_existing_db)
 
     def scale_evalue(self, df, name='E'):
         df['E_s'] = df[name]
@@ -176,11 +179,9 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
             # do the fitting: it's just a sliding window with an increasing size
             def bin_mean(fit_row, df):
                 bar.update()
-                hits = df[(df['length'] >= fit_row.left) & (df['length'] < fit_row.right)]
+                hits = df[(df['length'] >= fit_row.left) & (df['length'] <= fit_row.right)]
                 return hits['E_s'].mean()
             fit['fit'] = fit.apply(bin_mean, args=(data,), axis=1)
-            #print('\n'.join(['\t' + ln for ln in str(bar).split('\n')]))
-            #print('Completed fitting.')
             
             self.model_df = fit.dropna()
             self.model_df.to_csv(self.model_fn, index=False)
@@ -192,8 +193,7 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
               'file_dep': [self.output_fn, 
                            self.translated_x_db_fn + '.csv',
                            self.db_x_translated_fn + '.csv'],
-              'targets': [self.model_fn],
-              'clean': [clean_targets]}
+              'targets': [self.model_fn]}
 
         return dict_to_task(td)
 
@@ -225,7 +225,8 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
                 scatter_kws['marker'] = 'o'
                 line_kws = {'c': sns.xkcd_rgb['red wine'], 
                             'label':'Query Hits Regression'}
-                sns.regplot('s_aln_len', 'E_s', self.hits_df, order=1, 
+                sample_size = min(len(self.hits_df), 10000)
+                sns.regplot('s_aln_len', 'E_s', self.hits_df.sample(sample_size), order=1, 
                             label='Query Hits', scatter_kws=scatter_kws, 
                             line_kws=line_kws, color=scatter_kws['c'], ax=ax)
 
@@ -256,8 +257,7 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
                            self.db_x_translated_fn + '.csv',
                            self.model_fn],
               'targets': [self.crbl_output_fn, 
-                          self.model_plot_fn],
-              'clean': [clean_targets]}
+                          self.model_plot_fn]}
 
         return dict_to_task(td)
 
