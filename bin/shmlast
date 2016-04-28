@@ -55,7 +55,8 @@ def main():
     args = parser.parse_args()
     tasks = args.func(args)
 
-    run_tasks(tasks, [args.action])   
+    dep_file = '{0}.shmlast.doit.db'.format(os.path.basename(args.query))
+    run_tasks(tasks, [args.action], config={'dep_file': dep_file})   
 
 
 if __name__ == '__main__':
