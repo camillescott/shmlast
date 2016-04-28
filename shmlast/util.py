@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
+import hashlib
 import os
+from string import digits
 
 from doit.tools import run_once, create_folder, title_with_actions, LongRunning
 from doit.tools import PythonInteractiveAction
@@ -96,23 +98,33 @@ def which(program, raise_err=True):
     else:
         return None
 
+def filesize_commands(input_filename, n_jobs, n_nodes=None):
+    if n_nodes is not None:
+        n_jobs = n_jobs * n_nodes
+
+    var=hashlib.sha224(input_filename.encode('utf-8')).hexdigest().translate({ord(k): None for k in digits})
+    cmds = []
+    cmds.append("export {var}_size=`du --apparent-size --block-size=1 pep.fa 2>/dev/null | awk {{'print $1'}}`".format(var=var))
+    cmds.append("export {var}_block=`expr ${var}_size / {j}`".format(j=n_jobs, var=var))
+    
+    return cmds, "{var}_block".format(var=var)
+
 def parallel_fasta(input_filename, n_jobs):
-    file_size = 'S=`stat -c "%%s" {0}`; B=`expr $S / {1}`;'.format(input_filename,
-                                                                 n_jobs)
+    cmds, block_var = filesize_commands(input_filename, n_jobs)
+
     exc = which('parallel')
-    cmd = [file_size, 'cat', input_filename, '|', exc, '--block', '$B',
+    cmd = ['cat', input_filename, '|', exc, '--block', '$'+block_var,
            '--pipe', '--recstart', '">"', '--gnu', '-j', str(n_jobs)]
 
-    return ' '.join(cmd)
+    return cmds, ' '.join(cmd)
 
 def multinode_parallel_fasta(input_filename, ppn, nodes):
-    file_size = 'S=`stat -c "%%s" {0}`; B=`expr $S / {1}`;'.format(input_filename,
-                                                                   nodes * ppn)
+    cmds, block_var = filesize_commands(input_filename, ppn, nodes)
+    
     exc = which('parallel')
-    cmd = [file_size, 'cat', input_filename, '|', exc, '--block', '$B',
-           '--eta', '--pipe', '--recstart', '">"', '--gnu', '--jobs', str(ppn),
-           '--sshloginfile $PBS_NODEFILE', '--workdir $PWD']
+    cmd = ['cat', input_filename, '|', exc, '--block', '$'+block_var,
+                 '--eta', '--pipe', '--recstart', '">"', '--gnu', '--jobs', str(ppn),
+                 '--sshloginfile $PBS_NODEFILE', '--workdir $PWD']
 
-    return ' '.join(cmd)
-
+    return cmds, ' '.join(cmd)
 

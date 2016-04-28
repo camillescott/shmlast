@@ -57,7 +57,8 @@ def main():
     tasks = args.func(args)
 
     dep_file = '{0}.shmlast.doit.db'.format(os.path.basename(args.query))
-    run_tasks(tasks, [args.action], config={'dep_file': dep_file})   
+    run_tasks(tasks, [args.action], config={'dep_file': dep_file,
+                                            'versbosity': 2})   
 
 
 if __name__ == '__main__':

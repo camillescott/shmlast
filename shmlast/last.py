@@ -97,19 +97,22 @@ def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
     lastal_cmd = '"{0}"'.format(' '.join(lastal_cmd))
 
     if n_nodes is None:
-        parallel = parallel_fasta(query, n_threads)
+        actions, parallel = parallel_fasta(query, n_threads)
     else:
-        parallel = multinode_parallel_fasta(query, n_threads, n_nodes)
+        actions, parallel = multinode_parallel_fasta(query, n_threads, n_nodes)
 
 
     cmd = [parallel, lastal_cmd, '<', query, '>', out_fn]
     cmd = ' '.join(cmd)
+    actions.append(cmd)
+    merged = ';\\\n'.join(actions)
+    print(actions)
 
     name = 'lastal:{0}'.format(os.path.join(out_fn))
 
     return {'name': name,
             'title': title_with_actions,
-            'actions': [cmd],
+            'actions': [merged], 
             'targets': [out_fn],
             'file_dep': [query, db + '.prj'],
             'clean': [clean_targets]}
