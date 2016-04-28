@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from doit.task import clean_targets
-from doit.tools import title_with_actions
+from doit.tools import title_with_actions, LongRunning
 import glob
 import numpy as np
 import os
@@ -112,7 +112,7 @@ def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
 
     return {'name': name,
             'title': title_with_actions,
-            'actions': [merged], 
+            'actions': [LongRunning(merged)], 
             'targets': [out_fn],
             'file_dep': [query, db + '.prj'],
             'clean': [clean_targets]}

@@ -114,7 +114,7 @@ def parallel_fasta(input_filename, n_jobs):
 
     exc = which('parallel')
     cmd = ['cat', input_filename, '|', exc, '--block', '$'+block_var,
-           '--pipe', '--recstart', '">"', '--gnu', '-j', str(n_jobs)]
+           '--eta', '--pipe', '--recstart', '">"', '--gnu', '-j', str(n_jobs)]
 
     return cmds, ' '.join(cmd)
 
