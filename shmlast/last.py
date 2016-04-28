@@ -106,7 +106,6 @@ def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
     cmd = ' '.join(cmd)
     actions.append(cmd)
     merged = ';\\\n'.join(actions)
-    print(actions)
 
     name = 'lastal:{0}'.format(os.path.join(out_fn))
 
