@@ -95,3 +95,24 @@ def which(program, raise_err=True):
         raise DependencyError('{0} not found; is it installed?'.format(program))
     else:
         return None
+
+def parallel_fasta(input_filename, n_jobs):
+    file_size = 'S=`stat -c "%%s" {0}`; B=`expr $S / {1}`;'.format(input_filename,
+                                                                 n_jobs)
+    exc = which('parallel')
+    cmd = [file_size, 'cat', input_filename, '|', exc, '--block', '$B',
+           '--pipe', '--recstart', '">"', '--gnu', '-j', str(n_jobs)]
+
+    return ' '.join(cmd)
+
+def multinode_parallel_fasta(input_filename, ppn, nodes):
+    file_size = 'S=`stat -c "%%s" {0}`; B=`expr $S / {1}`;'.format(input_filename,
+                                                                   nodes * ppn)
+    exc = which('parallel')
+    cmd = [file_size, 'cat', input_filename, '|', exc, '--block', '$B',
+           '--eta', '--pipe', '--recstart', '">"', '--gnu', '--jobs', str(ppn),
+           '--sshloginfile $PBS_NODEFILE', '--workdir $PWD']
+
+    return ' '.join(cmd)
+
+
