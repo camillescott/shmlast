@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
 from doit.task import clean_targets
-from doit.tools import title_with_actions, LongRunning
+from doit.tools import LongRunning
 import glob
 import numpy as np
 import os
 import pandas as pd
 
 from .util import create_doit_task as doit_task
-from .util import which, parallel_fasta, multinode_parallel_fasta
+from .util import which, parallel_fasta, multinode_parallel_fasta, title
 
 LASTAL_CFG = { "params": "",
                "frameshift": 15 }
@@ -56,7 +56,7 @@ def lastdb_task(db_fn, db_out_suffix=None, prot=True, cfg=LASTDB_CFG,
     name = 'lastdb:{0}'.format(os.path.basename(db_out_prefix))
 
     tskd = {'name': name,
-            'title': title_with_actions,
+            'title': title,
             'actions': [cmd],
             'targets': [db_out_prefix + '.prj'],
             'uptodate': [True],
@@ -110,7 +110,7 @@ def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
     name = 'lastal:{0}'.format(os.path.join(out_fn))
 
     return {'name': name,
-            'title': title_with_actions,
+            'title': title,
             'actions': [LongRunning(merged)], 
             'targets': [out_fn],
             'file_dep': [query, db + '.prj'],

@@ -1,6 +1,6 @@
 #/usr/bin/env python3
 
-from doit.tools import run_once, create_folder, title_with_actions
+from doit.tools import run_once, create_folder
 from doit.task import clean_targets, dict_to_task
 import matplotlib as mpl
 mpl.use('Agg')
@@ -16,7 +16,7 @@ import sys
 from .hits import BestHits
 from .last import lastdb_task, lastal_task, MafParser
 from .transeq import transeq_task, rename_task
-from .util import ShortenedPythonAction
+from .util import ShortenedPythonAction, title
 
 class ReciprocalBestLAST(object):
 
@@ -67,7 +67,7 @@ class ReciprocalBestLAST(object):
                                                                 index=False)
 
         td = {'name': 'reciprocal_best_last',
-              'title': title_with_actions,
+              'title': title,
               'actions': [ShortenedPythonAction(reciprocals)],
               'file_dep': [self.translated_x_db_fn,
                            self.db_x_translated_fn],
@@ -187,7 +187,7 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
             self.model_df.to_csv(self.model_fn, index=False)
 
         td = {'name': 'fit_crbl_model',
-              'title': title_with_actions,
+              'title': title,
               'actions': [ShortenedPythonAction(load_files),
                           ShortenedPythonAction(model_fit)],
               'file_dep': [self.output_fn, 
@@ -248,7 +248,7 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
             reciprocals.to_csv(self.crbl_output_fn, index=False)
 
         td = {'name': 'filter_crbl_hits',
-              'title': title_with_actions,
+              'title': title,
               'actions': [ShortenedPythonAction(filter_from_model),
                           ShortenedPythonAction(plot_crbl_fit),
                           ShortenedPythonAction(save_results)],

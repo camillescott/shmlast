@@ -10,6 +10,18 @@ from doit.task import clean_targets, dict_to_task
 from doit.cmd_base import TaskLoader
 from doit.doit_cmd import DoitMain
 
+def leftpad(s):
+    return '\n'.join('    {0}'.format(i) for i in s.split('\n'))
+
+def title(task):
+    """return task name task actions"""
+    if task.actions:
+        title = "\n\t".join([leftpad(str(action)) for action in task.actions])
+    # A task that contains no actions at all
+    # is used as group task
+    else:
+        title = "Group: %s" % ", ".join(task.task_dep)
+    return "%s => \n%s"% (task.name, title)
 
 def create_doit_task(task_dict_func):
     '''Wrapper to decorate functions returning pydoit

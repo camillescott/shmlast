@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 from doit.task import clean_targets
-from doit.tools import title_with_actions
 import pandas as pd
 import screed
 
 from .util import create_doit_task as doit_task
-from .util import ShortenedPythonAction
+from .util import ShortenedPythonAction, title
 
 
 @doit_task
@@ -26,7 +25,7 @@ def rename_task(input_fn, output_fn, name_map_fn='name_map.csv'):
                                                               index=False)
 
     return {'name': 'rename_sequences',
-            'title': title_with_actions,
+            'title': title,
             'actions': [ShortenedPythonAction(rename_input)],
             'targets': [output_fn, name_map_fn],
             'file_dep': [input_fn],
@@ -44,7 +43,7 @@ def transeq_task(input_fn, output_fn, clean=True, frame=6):
           ' -outseq {output_fn}'.format(**locals())
 
     return {'name': 'transeq',
-            'title': title_with_actions,
+            'title': title,
             'actions': [cmd],
             'targets': [output_fn],
             'file_dep': [input_fn],
