@@ -8,7 +8,7 @@ import os
 import pandas as pd
 
 from .util import create_doit_task as doit_task
-from .util import which
+from .util import which, parallel_fasta, multinode_parallel_fasta
 
 LASTAL_CFG = { "params": "",
                "frameshift": 15 }
@@ -24,7 +24,8 @@ def clean_lastdb(db_prefix):
 
 
 @doit_task
-def lastdb_task(db_fn, db_out_prefix=None, prot=True, cfg=LASTDB_CFG):
+def lastdb_task(db_fn, db_out_suffix=None, prot=True, cfg=LASTDB_CFG,
+                use_existing=None):
     '''Create a pydoit task to run lastdb.
 
     Args:
@@ -40,8 +41,11 @@ def lastdb_task(db_fn, db_out_prefix=None, prot=True, cfg=LASTDB_CFG):
 
     exc = which('lastdb')
     params = cfg['params']
-    if db_out_prefix is None:
-        db_out_prefix = db_fn + '.lastdb'
+    if use_existing is not None:
+        db_out_suffix = use_existing
+    if db_out_suffix is None:
+        db_out_suffix = '.lastdb'
+    db_out_prefix = db_fn + db_out_suffix
     
     cmd = [exc]
     if prot:
@@ -51,19 +55,21 @@ def lastdb_task(db_fn, db_out_prefix=None, prot=True, cfg=LASTDB_CFG):
 
     name = 'lastdb:{0}'.format(os.path.basename(db_out_prefix))
 
-    return {'name': name,
+    tskd = {'name': name,
             'title': title_with_actions,
-            'actions': [cmd,
-                        'touch {0}'.format(db_out_prefix)],
-            'file_dep': [db_fn],
-            'targets': [db_out_prefix],
+            'actions': [cmd],
+            'targets': [db_out_prefix + '.prj'],
             'uptodate': [True],
             'clean': [clean_targets,
                       (clean_lastdb, [db_out_prefix])]}
+    if not use_existing:
+        tskd['file_dep'] = [db_fn]
+
+    return tskd
 
 @doit_task
 def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
-                    translate=False, cfg=LASTAL_CFG):
+                    translate=False, cfg=LASTAL_CFG, n_nodes=None):
     '''Create a pydoit task to run lastal
 
     Args:
@@ -90,8 +96,13 @@ def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
     lastal_cmd.append(db)
     lastal_cmd = '"{0}"'.format(' '.join(lastal_cmd))
 
-    cmd = [parallel_exc, '--no-notice', '-j', str(n_threads), 
-            lastal_cmd, '<', query, '>', out_fn]
+    if n_nodes is None:
+        parallel = parallel_fasta(query, n_threads)
+    else:
+        parallel = multinode_parallel_fasta(query, n_threads, n_nodes)
+
+
+    cmd = [parallel, lastal_cmd, '<', query, '>', out_fn]
     cmd = ' '.join(cmd)
 
     name = 'lastal:{0}'.format(os.path.join(out_fn))

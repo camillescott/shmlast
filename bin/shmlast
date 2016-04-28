@@ -12,7 +12,8 @@ def rbl_tasks(args):
     print(prog_string('Reciprocal Best LAST', 
                       __version__, args.action))
     rbl = RBL(args.query, args.database, args.output, 
-              n_threads=args.n_threads, cutoff=args.evalue_cutoff)
+              n_threads=args.n_threads, cutoff=args.evalue_cutoff,
+              use_existing_db=args.use_existing_db)
     return rbl.tasks()
 
 
@@ -21,7 +22,8 @@ def crbl_tasks(args):
                       __version__, args.action))
 
     crbl = CRBL(args.query, args.database, args.output,
-                n_threads=args.n_threads, cutoff=args.evalue_cutoff)
+                n_threads=args.n_threads, cutoff=args.evalue_cutoff,
+                use_existing_db=args.use_existing_db)
     return crbl.tasks()
 
 
@@ -39,6 +41,9 @@ def main():
         p.add_argument('--n_threads', type=int, default=1)
         p.add_argument('-e', '--evalue-cutoff', default=0.00001, type=float)
         p.add_argument('--action', default='run')
+        p.add_argument('--use-existing-db', default=None,
+                       help='Use an existing LAST database with this suffix;'\
+                            ' pass an empty string for no suffix')
         return p
 
     rbl_parser = add_common_args(subparsers.add_parser('rbl'))
