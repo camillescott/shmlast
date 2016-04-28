@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 
 from shmlast.crbl import ConditionalReciprocalBestLAST as CRBL
 from shmlast.crbl import ReciprocalBestLAST as RBL
