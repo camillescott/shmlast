@@ -114,7 +114,7 @@ def parallel_fasta(input_filename, n_jobs):
 
     exc = which('parallel')
     cmd = ['cat', input_filename, '|', exc, '--block', '$'+block_var,
-           '--eta', '--pipe', '--recstart', '">"', '--gnu', '-j', str(n_jobs)]
+           '--progress', '--pipe', '--recstart', '">"', '--gnu', '-j', str(n_jobs)]
 
     return cmds, ' '.join(cmd)
 
@@ -123,7 +123,7 @@ def multinode_parallel_fasta(input_filename, ppn, nodes):
     
     exc = which('parallel')
     cmd = ['cat', input_filename, '|', exc, '--block', '$'+block_var,
-                 '--eta', '--pipe', '--recstart', '">"', '--gnu', '--jobs', str(ppn),
+                 '--progress', '--pipe', '--recstart', '">"', '--gnu', '--jobs', str(ppn),
                  '--sshloginfile $PBS_NODEFILE', '--workdir $PWD']
 
     return cmds, ' '.join(cmd)
