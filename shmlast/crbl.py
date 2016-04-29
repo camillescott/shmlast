@@ -27,15 +27,18 @@ class ReciprocalBestLAST(object):
         self.renamed_fn = self.transcriptome_fn + '.renamed'
         self.name_map_fn = self.transcriptome_fn + '.names.csv'
         self.translated_fn = self.renamed_fn + '.pep'
+
         self.database_fn = database_fn
+        self.renamed_database_fn = self.database_fn + '.renamed'
+        self.database_name_map_fn = self.database_fn + '.names.csv'
         self.n_threads = n_threads
         self.cutoff = cutoff
         self.use_existing_db = use_existing_db
 
-        self.db_x_translated_fn = '{0}.x.{1}.maf'.format(base(self.database_fn),
+        self.db_x_translated_fn = '{0}.x.{1}.maf'.format(base(self.renamed_database_fn),
                                                          base(self.translated_fn))
         self.translated_x_db_fn = '{0}.x.{1}.maf'.format(base(self.translated_fn),
-                                                         base(self.database_fn))
+                                                         base(self.renamed_database_fn))
         self.output_fn = output_fn
         if self.output_fn is None:
             self.output_fn = '{0}.x.{1}.rbl.csv'.format(base(self.transcriptome_fn),
@@ -78,10 +81,16 @@ class ReciprocalBestLAST(object):
         
         return dict_to_task(td)
 
-    def rename_task(self):
+    def rename_transcriptome_task(self):
         return rename_task(self.transcriptome_fn,
                            self.renamed_fn,
                            name_map_fn=self.name_map_fn)
+
+    def rename_database_task(self):
+        return rename_task(self.database_fn,
+                           self.renamed_database_fn,
+                           prefix='db',
+                           name_map_fn=self.database_name_map_fn)
 
     def translate_task(self):
         return transeq_task(self.renamed_fn,
@@ -92,20 +101,20 @@ class ReciprocalBestLAST(object):
                            prot=True)
 
     def format_database_task(self):
-        return lastdb_task(self.database_fn,
+        return lastdb_task(self.renamed_database_fn,
                            prot=True,
                            use_existing=self.use_existing_db)
 
     def align_transcriptome_task(self):
         return lastal_task(self.translated_fn,
-                           self.database_fn + '.lastdb',
+                           self.renamed_database_fn + '.lastdb',
                            self.translated_x_db_fn,
                            translate=False, 
                            cutoff=self.cutoff,
                            n_threads=self.n_threads)
 
     def align_database_task(self):
-        return lastal_task(self.database_fn,
+        return lastal_task(self.renamed_database_fn,
                            self.translated_fn + '.lastdb',
                            self.db_x_translated_fn,
                            translate=False, 
@@ -113,7 +122,8 @@ class ReciprocalBestLAST(object):
                            n_threads=self.n_threads)
 
     def tasks(self):
-        yield self.rename_task()
+        yield self.rename_transcriptome_task()
+        yield self.rename_database_task()
         yield self.translate_task()
         yield self.format_transcriptome_task()
         yield self.format_database_task()

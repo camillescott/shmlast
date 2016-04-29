@@ -10,6 +10,11 @@ from doit.task import clean_targets, dict_to_task
 from doit.cmd_base import TaskLoader
 from doit.doit_cmd import DoitMain
 
+
+def unwrap_fasta():
+     return 'python -c "import screed; import sys; map(lambda record: sys.stdout.write(\'>{0}\\n{1}\\n\'.format(record.name, record.sequence)), screed.open(sys.stdin.fileno()))"'
+
+
 def leftpad(s):
     return '\n'.join('    {0}'.format(i) for i in s.split('\n'))
 
@@ -110,33 +115,14 @@ def which(program, raise_err=True):
     else:
         return None
 
-def filesize_commands(input_filename, n_jobs, n_nodes=None):
-    if n_nodes is not None:
-        n_jobs = n_jobs * n_nodes
 
-    var=hashlib.sha224(input_filename.encode('utf-8')).hexdigest().translate({ord(k): None for k in digits})
-    cmds = []
-    cmds.append("export {var}_size=`du --apparent-size --block-size=1 {f} 2>/dev/null | awk {{'print $1'}}`".format(var=var, f=input_filename))
-    cmds.append("export {var}_block=`expr ${var}_size / {j}`".format(j=n_jobs, var=var))
-    
-    return cmds, "{var}_block".format(var=var)
-
-def parallel_fasta(input_filename, n_jobs):
-    cmds, block_var = filesize_commands(input_filename, n_jobs)
+def parallel_fasta(input_filename, output_filename, command, n_jobs, pbs=False):
 
     exc = which('parallel')
-    cmd = ['cat', input_filename, '|', exc, '--block', '$'+block_var,
-           '--progress', '--pipe', '--recstart', '">"', '--gnu', '-j', str(n_jobs)]
-
-    return cmds, ' '.join(cmd)
-
-def multinode_parallel_fasta(input_filename, ppn, nodes):
-    cmds, block_var = filesize_commands(input_filename, ppn, nodes)
-    
-    exc = which('parallel')
-    cmd = ['cat', input_filename, '|', exc, '--block', '$'+block_var,
-                 '--progress', '--pipe', '--recstart', '">"', '--gnu', '--jobs', str(ppn),
-                 '--sshloginfile $PBS_NODEFILE', '--workdir $PWD']
-
-    return cmds, ' '.join(cmd)
+    cmd = ['cat', input_filename, '|', exc, '--progress', '--pipe', '-L', 2, '-N', 400,
+           '--gnu', '-j', n_jobs, '-a', input_filename]
+    if pbs:
+        cmd.extend(['--sshloginfile $PBS_NODEFILE', '--workdir $PWD'])
+    cmd.extend([command, '>', output_filename])
+    return ' '.join(map(str, cmd))
 

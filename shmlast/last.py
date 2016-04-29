@@ -8,7 +8,7 @@ import os
 import pandas as pd
 
 from .util import create_doit_task as doit_task
-from .util import which, parallel_fasta, multinode_parallel_fasta, title
+from .util import which, parallel_fasta, title
 
 LASTAL_CFG = { "params": "",
                "frameshift": 15 }
@@ -69,7 +69,7 @@ def lastdb_task(db_fn, db_out_suffix=None, prot=True, cfg=LASTDB_CFG,
 
 @doit_task
 def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
-                    translate=False, cfg=LASTAL_CFG, n_nodes=None):
+                    translate=False, cfg=LASTAL_CFG, pbs=False):
     '''Create a pydoit task to run lastal
 
     Args:
@@ -94,24 +94,15 @@ def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
         cutoff = round(1.0 / cutoff)
         lastal_cmd.append('-D' + str(cutoff))
     lastal_cmd.append(db)
-    lastal_cmd = '"{0}"'.format(' '.join(lastal_cmd))
+    lastal_cmd = ' '.join(lastal_cmd)
 
-    if n_nodes is None:
-        actions, parallel = parallel_fasta(query, n_threads)
-    else:
-        actions, parallel = multinode_parallel_fasta(query, n_threads, n_nodes)
-
-
-    cmd = [parallel, lastal_cmd, '<', query, '>', out_fn]
-    cmd = ' '.join(cmd)
-    actions.append(cmd)
-    merged = ';\\\n'.join(actions)
+    cmd = parallel_fasta(query, out_fn, lastal_cmd, n_threads, pbs=pbs)
 
     name = 'lastal:{0}'.format(os.path.join(out_fn))
 
     return {'name': name,
             'title': title,
-            'actions': [LongRunning(merged)], 
+            'actions': [LongRunning(cmd)], 
             'targets': [out_fn],
             'file_dep': [query, db + '.prj'],
             'clean': [clean_targets]}
