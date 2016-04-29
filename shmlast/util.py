@@ -116,7 +116,7 @@ def filesize_commands(input_filename, n_jobs, n_nodes=None):
 
     var=hashlib.sha224(input_filename.encode('utf-8')).hexdigest().translate({ord(k): None for k in digits})
     cmds = []
-    cmds.append("export {var}_size=`du --apparent-size --block-size=1 pep.fa 2>/dev/null | awk {{'print $1'}}`".format(var=var))
+    cmds.append("export {var}_size=`du --apparent-size --block-size=1 {f} 2>/dev/null | awk {{'print $1'}}`".format(var=var, f=input_filename))
     cmds.append("export {var}_block=`expr ${var}_size / {j}`".format(j=n_jobs, var=var))
     
     return cmds, "{var}_block".format(var=var)
