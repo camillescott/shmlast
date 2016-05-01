@@ -9,7 +9,6 @@ from ficus import FigureManager
 import numpy as np
 from os.path import basename as base
 import pandas as pd
-import pyprind
 import seaborn as sns
 import sys
 
@@ -161,45 +160,99 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
         df.loc[df['E_s'] == 0.0, 'E_s'] = 1e-300
         df['E_s'] = -np.log10(df['E_s'])
 
-    def crbl_fit_task(self):
-
-        def load_files():
+    '''
+    def load_files(self):
+        if not hasattr(self, 'rbh_df'):
             self.rbh_df = pd.read_csv(self.output_fn)
             self.scale_evalue(self.rbh_df)
 
+        if not hasattr(self, 'hits_df'):
             self.hits_df = pd.read_csv(self.translated_x_db_fn + '.csv')
             self.scale_evalue(self.hits_df)
+    '''
 
-        def model_fit():
-            data = self.rbh_df[['s_aln_len', 'E_s']].rename(columns={'s_aln_len':'length'})
-            data.sort_values('length', inplace=True)
-            
-            # create a DataFrame for the model, staring with the alignment lengths
-            fit = pd.DataFrame(np.arange(10, data['length'].max()), 
-                               columns=['center'], dtype=int)
-            
-            # create the bins
-            fit['size'] = fit['center'] * 0.1
-            fit.loc[fit['size'] < 5, 'size'] = 5
-            fit['size'] = fit['size'].astype(int)
-            fit['left'] = fit['center'] - fit['size']
-            fit['right'] = fit['center'] + fit['size']
-            
-            bar = pyprind.ProgBar(len(fit), width=80, monitor=True)
-            # do the fitting: it's just a sliding window with an increasing size
-            def bin_mean(fit_row, df):
-                bar.update()
-                hits = df[(df['length'] >= fit_row.left) & (df['length'] <= fit_row.right)]
-                return hits['E_s'].mean()
-            fit['fit'] = fit.apply(bin_mean, args=(data,), axis=1)
-            
-            self.model_df = fit.dropna()
-            self.model_df.to_csv(self.model_fn, index=False)
+    def fit_crbh_model(self, rbh_df):
+        self.scale_evalue(rbh_df)
+        data = rbh_df[['s_aln_len', 'E_s']].rename(columns={'s_aln_len':'length'})
+        data.sort_values('length', inplace=True)
+        
+        # create a DataFrame for the model, staring with the alignment lengths
+        fit = pd.DataFrame(np.arange(10, data['length'].max()), 
+                           columns=['center'], dtype=int)
+        
+        # create the bins
+        fit['size'] = fit['center'] * 0.1
+        fit.loc[fit['size'] < 5, 'size'] = 5
+        fit['size'] = fit['size'].astype(int)
+        fit['left'] = fit['center'] - fit['size']
+        fit['right'] = fit['center'] + fit['size']
+        
+        # do the fitting: it's just a sliding window with an increasing size
+        def bin_mean(fit_row, df):
+            hits = df[(df['length'] >= fit_row.left) & (df['length'] <= fit_row.right)]
+            return hits['E_s'].mean()
+        fit['fit'] = fit.apply(bin_mean, args=(data,), axis=1)
+        model_df = fit.dropna()
+
+        return model_df
+
+    def filter_from_model(self, model_df, rbh_df, hits_df):
+
+        self.scale_evalue(hits_df)
+        comp_df = pd.merge(hits_df[hits_df['ID'].isin(rbh_df['ID']) == False], 
+                           model_df, left_on='s_aln_len', right_on='center')
+    
+        crbl_df = comp_df[comp_df['E_s'] >= comp_df['fit']]
+
+        del crbl_df['center']
+        del crbl_df['left']
+        del crbl_df['right']
+        del crbl_df['fit']
+        del crbl_df['size']
+        del crbl_df['translated_q_name']
+
+        return crbl_df
+
+    def plot_crbl_fit(self, model_df, rbh_df, hits_df):
+
+        plt.style.use('seaborn-ticks')
+
+        with FigureManager(self.model_plot_fn, show=False, 
+                           figsize=(10,10)) as (fig, ax):
+
+            scatter_kws = {'s': 10, 'alpha':0.7}
+            scatter_kws['c'] = sns.xkcd_rgb['ruby']
+            scatter_kws['marker'] = 'o'
+            line_kws = {'c': sns.xkcd_rgb['red wine'], 
+                        'label':'Query Hits Regression'}
+            sample_size = min(len(hits_df), 10000)
+            sns.regplot('s_aln_len', 'E_s', hits_df.sample(sample_size), order=1, 
+                        label='Query Hits', scatter_kws=scatter_kws, 
+                        line_kws=line_kws, color=scatter_kws['c'], ax=ax)
+
+            scatter_kws['c'] = sns.xkcd_rgb['twilight blue']
+            scatter_kws['marker'] = 's'
+            sns.regplot('center', 'fit', model_df, 
+                        fit_reg=False, x_jitter=True, y_jitter=True, ax=ax,
+                        label='CRBL Fit', scatter_kws=scatter_kws, line_kws=line_kws)
+
+            leg = ax.legend(fontsize='medium', scatterpoints=3, frameon=True)
+            leg.get_frame().set_linewidth(1.0)
+
+            ax.set_xlim(model_df['center'].min(), model_df['center'].max())
+            ax.set_ylim(0, max(model_df['fit'].max(), hits_df['E'].max()) + 50)
+            ax.set_title('CRBL Fit')
+
+    def crbl_fit_task(self):
+
+        def do_crbl_fit():
+            rbh_df = pd.read_csv(self.output_fn)
+            model_df = self.fit_crbh_model(rbh_df)
+            model_df.to_csv(self.model_fn, index=False)
 
         td = {'name': 'fit_crbl_model',
               'title': title,
-              'actions': [ShortenedPythonAction(load_files),
-                          ShortenedPythonAction(model_fit)],
+              'actions': [ShortenedPythonAction(do_crbl_fit)],
               'file_dep': [self.output_fn, 
                            self.translated_x_db_fn + '.csv',
                            self.db_x_translated_fn + '.csv'],
@@ -209,59 +262,20 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
 
     def crbl_filter_task(self):
 
-        def filter_from_model(): 
-            
-            comp_df = pd.merge(self.hits_df[self.hits_df['ID'].isin(self.rbh_df['ID']) == False], 
-                               self.model_df, left_on='s_aln_len', right_on='center')
-        
-            self.crbl_df = comp_df[comp_df['E_s'] >= comp_df['fit']]
+        def do_crbl_filter():
+            model_df = pd.read_csv(self.model_fn)
+            rbh_df = pd.read_csv(self.output_fn)
+            hits_df = pd.read_csv(self.translated_x_db_fn + '.csv')
 
-            del self.crbl_df['center']
-            del self.crbl_df['left']
-            del self.crbl_df['right']
-            del self.crbl_df['fit']
-            del self.crbl_df['size']
-            del self.crbl_df['translated_q_name']
+            filtered_df = self.filter_from_model(model_df, rbh_df, hits_df)
+            results = pd.concat([rbh_df, filtered_df], axis=0)
+            results.to_csv(self.crbl_output_fn, index=False)
 
-        def plot_crbl_fit():
-
-            plt.style.use('seaborn-ticks')
-
-            with FigureManager(self.model_plot_fn, show=False, 
-                               figsize=(10,10)) as (fig, ax):
-
-                scatter_kws = {'s': 10, 'alpha':0.7}
-                scatter_kws['c'] = sns.xkcd_rgb['ruby']
-                scatter_kws['marker'] = 'o'
-                line_kws = {'c': sns.xkcd_rgb['red wine'], 
-                            'label':'Query Hits Regression'}
-                sample_size = min(len(self.hits_df), 10000)
-                sns.regplot('s_aln_len', 'E_s', self.hits_df.sample(sample_size), order=1, 
-                            label='Query Hits', scatter_kws=scatter_kws, 
-                            line_kws=line_kws, color=scatter_kws['c'], ax=ax)
-
-                scatter_kws['c'] = sns.xkcd_rgb['twilight blue']
-                scatter_kws['marker'] = 's'
-                sns.regplot('center', 'fit', self.model_df, 
-                            fit_reg=False, x_jitter=True, y_jitter=True, ax=ax,
-                            label='CRBL Fit', scatter_kws=scatter_kws, line_kws=line_kws)
-
-                leg = ax.legend(fontsize='medium', scatterpoints=3, frameon=True)
-                leg.get_frame().set_linewidth(1.0)
-
-                ax.set_xlim(self.model_df['center'].min(), self.model_df['center'].max())
-                ax.set_ylim(0, max(self.model_df['fit'].max(), self.hits_df['E'].max()) + 50)
-                ax.set_title('CRBL Fit')
-
-        def save_results():
-            reciprocals = pd.concat([self.rbh_df, self.crbl_df], axis=0)
-            reciprocals.to_csv(self.crbl_output_fn, index=False)
+            self.plot_crbl_fit(model_df, rbh_df, hits_df)
 
         td = {'name': 'filter_crbl_hits',
               'title': title,
-              'actions': [ShortenedPythonAction(filter_from_model),
-                          ShortenedPythonAction(plot_crbl_fit),
-                          ShortenedPythonAction(save_results)],
+              'actions': [ShortenedPythonAction(do_crbl_filter)],
               'file_dep': [self.output_fn, 
                            self.translated_x_db_fn + '.csv',
                            self.db_x_translated_fn + '.csv',
