@@ -12,7 +12,9 @@ from doit.doit_cmd import DoitMain
 
 
 def unwrap_fasta():
-     return 'python -c "import screed; import sys; map(lambda record: sys.stdout.write(\'>{0}\\n{1}\\n\'.format(record.name, record.sequence)), screed.open(sys.stdin.fileno()))"'
+     return 'python -c "import screed; import sys; list(map('\
+            'lambda record: sys.stdout.write(\'>{0}\\n{1}\\n\'.format('\
+            'record.name, record.sequence)), screed.open(sys.stdin.fileno())))"'
 
 
 def leftpad(s):
