@@ -17,7 +17,7 @@ from .last import lastdb_task, lastal_task, MafParser
 from .transeq import transeq_task, rename_task
 from .util import ShortenedPythonAction, title
 
-class ReciprocalBestLAST(object):
+class RBL(object):
 
     def __init__(self, transcriptome_fn, database_fn, output_fn=None,
                  cutoff=.00001, n_threads=1, n_nodes=None, use_existing_db=None):
@@ -45,32 +45,37 @@ class ReciprocalBestLAST(object):
 
         self.bh = BestHits(comparison_cols=['E', 'EG2'])
 
+    @staticmethod
+    def get_reciprocals(query, database, besthits):
+        qvd_df = MafParser(query).read()
+        qvd_df[['qg_name', 'q_frame']] = qvd_df.q_name.str.partition('_')[[0,2]]
+        qvd_df.rename(columns={'q_name': 'translated_q_name',
+                               'qg_name': 'q_name'},
+                      inplace=True)
+        qvd_df['ID'] = qvd_df.index
+
+        dvq_df = MafParser(database).read()
+        dvq_df[['sg_name', 'frame']] = dvq_df.s_name.str.partition('_')[[0,2]]
+        dvq_df.rename(columns={'s_name': 'translated_s_name',
+                               'sg_name': 's_name'},
+                      inplace=True)
+        dvq_df['ID'] = dvq_df.index
+        
+        return besthits.reciprocal_best_hits(qvd_df, dvq_df), qvd_df, dvq_df
 
     def reciprocal_best_last_task(self):
-        
-        def reciprocals():
-            qvd_df = MafParser(self.translated_x_db_fn).read()
-            qvd_df[['qg_name', 'q_frame']] = qvd_df.q_name.str.partition('_')[[0,2]]
-            qvd_df.rename(columns={'q_name': 'translated_q_name',
-                                   'qg_name': 'q_name'},
-                          inplace=True)
-            qvd_df['ID'] = qvd_df.index
-
-            dvq_df = MafParser(self.db_x_translated_fn).read()
-            dvq_df[['sg_name', 'frame']] = dvq_df.s_name.str.partition('_')[[0,2]]
-            dvq_df.rename(columns={'s_name': 'translated_s_name',
-                                   'sg_name': 's_name'},
-                          inplace=True)
-            dvq_df['ID'] = dvq_df.index
-            
+       
+        def do_reciprocals():
+            rbh_df, q_df, d_df = RBL.get_reciprocals(self.translated_x_db_fn,
+                                                     self.db_x_translated_fn,
+                                                     self.bh)
+            rbh_df.to_csv(self.output_fn, index=False)
             qvd_df.to_csv(self.translated_x_db_fn + '.csv', index=False)
             dvq_df.to_csv(self.db_x_translated_fn + '.csv', index=False)
-            self.bh.reciprocal_best_hits(qvd_df, dvq_df).to_csv(self.output_fn,
-                                                                index=False)
 
         td = {'name': 'reciprocal_best_last',
               'title': title,
-              'actions': [ShortenedPythonAction(reciprocals)],
+              'actions': [ShortenedPythonAction(do_reciprocals)],
               'file_dep': [self.translated_x_db_fn,
                            self.db_x_translated_fn],
               'targets': [self.output_fn,
@@ -131,7 +136,7 @@ class ReciprocalBestLAST(object):
         yield self.reciprocal_best_last_task()
 
 
-class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
+class CRBL(RBL):
 
     def __init__(self, transcriptome_fn, database_fn, output_fn=None,
                  model_fn=None, cutoff=.00001, n_threads=1, use_existing_db=True):
@@ -148,34 +153,26 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
             self.model_fn = self.crbl_output_prefix + '.model.csv'
         self.model_plot_fn = self.model_fn + '.plot.pdf'
 
-        super(ConditionalReciprocalBestLAST, self).__init__(transcriptome_fn,
-                                                            database_fn,
-                                                            output_fn=None,
-                                                            cutoff=cutoff,
-                                                            n_threads=n_threads,
-                                                            use_existing_db=use_existing_db)
+        super(CRBL, self).__init__(transcriptome_fn,
+                                    database_fn,
+                                    output_fn=None,
+                                    cutoff=cutoff,
+                                    n_threads=n_threads,
+                                    use_existing_db=use_existing_db)
 
-    def scale_evalue(self, df, name='E'):
+    @staticmethod
+    def scale_evalue(df, name='E'):
         df['E_s'] = df[name]
         df.loc[df['E_s'] == 0.0, 'E_s'] = 1e-300
         df['E_s'] = -np.log10(df['E_s'])
 
-    '''
-    def load_files(self):
-        if not hasattr(self, 'rbh_df'):
-            self.rbh_df = pd.read_csv(self.output_fn)
-            self.scale_evalue(self.rbh_df)
+    @staticmethod
+    def fit_crbh_model(rbh_df):
 
-        if not hasattr(self, 'hits_df'):
-            self.hits_df = pd.read_csv(self.translated_x_db_fn + '.csv')
-            self.scale_evalue(self.hits_df)
-    '''
-
-    def fit_crbh_model(self, rbh_df):
-        self.scale_evalue(rbh_df)
-        data = rbh_df[['s_aln_len', 'E_s']].rename(columns={'s_aln_len':'length'})
+        data = rbh_df[['s_aln_len', 'E']].rename(columns={'s_aln_len':'length'})
         data.sort_values('length', inplace=True)
-        
+        CRBL.scale_evalue(data)
+
         # create a DataFrame for the model, staring with the alignment lengths
         fit = pd.DataFrame(np.arange(10, data['length'].max()), 
                            columns=['center'], dtype=int)
@@ -196,9 +193,10 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
 
         return model_df
 
-    def filter_from_model(self, model_df, rbh_df, hits_df):
+    @staticmethod
+    def filter_from_model(model_df, rbh_df, hits_df):
 
-        self.scale_evalue(hits_df)
+        CRBL.scale_evalue(hits_df)
         comp_df = pd.merge(hits_df[hits_df['ID'].isin(rbh_df['ID']) == False], 
                            model_df, left_on='s_aln_len', right_on='center')
     
@@ -213,12 +211,14 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
 
         return crbl_df
 
-    def plot_crbl_fit(self, model_df, rbh_df, hits_df):
+    @staticmethod
+    def plot_crbl_fit(model_df, rbh_df, hits_df, model_plot_fn, show=False,
+                     figsize=(10,10)):
 
         plt.style.use('seaborn-ticks')
 
-        with FigureManager(self.model_plot_fn, show=False, 
-                           figsize=(10,10)) as (fig, ax):
+        with FigureManager(model_plot_fn, show=show, 
+                           figsize=figsize) as (fig, ax):
 
             scatter_kws = {'s': 10, 'alpha':0.7}
             scatter_kws['c'] = sns.xkcd_rgb['ruby']
@@ -271,7 +271,7 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
             results = pd.concat([rbh_df, filtered_df], axis=0)
             results.to_csv(self.crbl_output_fn, index=False)
 
-            self.plot_crbl_fit(model_df, rbh_df, hits_df)
+            self.plot_crbl_fit(model_df, rbh_df, hits_df, self.model_plot_fn)
 
         td = {'name': 'filter_crbl_hits',
               'title': title,
@@ -286,7 +286,7 @@ class ConditionalReciprocalBestLAST(ReciprocalBestLAST):
         return dict_to_task(td)
 
     def tasks(self):
-        for tsk in super(ConditionalReciprocalBestLAST, self).tasks():
+        for tsk in super(CRBL, self).tasks():
             yield tsk
         yield self.crbl_fit_task()
         yield self.crbl_filter_task()

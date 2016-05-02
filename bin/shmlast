@@ -3,8 +3,8 @@
 import argparse
 import os
 
-from shmlast.crbl import ConditionalReciprocalBestLAST as CRBL
-from shmlast.crbl import ReciprocalBestLAST as RBL
+from shmlast.crbl import CRBL
+from shmlast.crbl import RBL
 from shmlast.util import prog_string, run_tasks
 from shmlast import __version__
 
