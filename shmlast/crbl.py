@@ -40,8 +40,10 @@ class RBL(object):
                                                          base(self.renamed_database_fn))
         self.output_fn = output_fn
         if self.output_fn is None:
-            self.output_fn = '{0}.x.{1}.rbl.csv'.format(base(self.transcriptome_fn),
+            self.output_prefix = '{0}.x.{1}.rbl'.format(base(self.transcriptome_fn),
                                                         base(self.database_fn))
+            self.unmapped_output_fn = self.output_prefix + '.unmapped.csv'
+            self.output_fn = self.output_prefix + '.csv'
 
         self.bh = BestHits(comparison_cols=['E', 'EG2'])
 
@@ -66,24 +68,57 @@ class RBL(object):
     def reciprocal_best_last_task(self):
        
         def do_reciprocals():
-            rbh_df, q_df, d_df = RBL.get_reciprocals(self.translated_x_db_fn,
+            rbh_df, qvd_df, dvq_df = RBL.get_reciprocals(self.translated_x_db_fn,
                                                      self.db_x_translated_fn,
                                                      self.bh)
-            rbh_df.to_csv(self.output_fn, index=False)
+            q_names = pd.read_csv(self.name_map_fn)
+            d_names = pd.read_csv(self.database_name_map_fn)
+
+            rbh_df.to_csv(self.unmapped_output_fn, index=False)
             qvd_df.to_csv(self.translated_x_db_fn + '.csv', index=False)
             dvq_df.to_csv(self.db_x_translated_fn + '.csv', index=False)
+
+            rbh_df = self.backmap(rbh_df, q_names, d_names)
+            qvd_df = self.backmap(qvd_df, q_names, d_names)
+            dvq_df = self.backmap(dvq_df, q_names, d_names)
+
+            rbh_df.to_csv(self.output_fn, index=False)
+            qvd_df.to_csv(self.translated_x_db_fn + '.mapped.csv', index=False)
+            dvq_df.to_csv(self.db_x_translated_fn + '.mapped.csv', index=False)
 
         td = {'name': 'reciprocal_best_last',
               'title': title,
               'actions': [ShortenedPythonAction(do_reciprocals)],
               'file_dep': [self.translated_x_db_fn,
                            self.db_x_translated_fn],
-              'targets': [self.output_fn,
+              'targets': [self.output_fn + '.csv',
                           self.translated_x_db_fn + '.csv',
-                          self.db_x_translated_fn + '.csv'],
+                          self.db_x_translated_fn + '.csv',
+                          self.output_fn + '.mapped.csv',
+                          self.translated_x_db_fn + '.mapped.csv',
+                          self.db_x_translated_fn + '.mapped.csv'],
               'clean': [clean_targets]}
         
         return dict_to_task(td)
+
+    @staticmethod
+    def backmap(results, q_names, d_names):
+
+        results = pd.merge(results, 
+                           q_names, 
+                           left_on='q_name',
+                           right_on='new_name')
+        results['q_name'] = results['old_name']
+        del results['old_name']
+
+        results = pd.merge(results, 
+                          d_names, 
+                          left_on='s_name',
+                          right_on='new_name')
+        results['s_name'] = results['old_name']
+        del results['old_name']
+
+        return results
 
     def rename_transcriptome_task(self):
         return rename_task(self.transcriptome_fn,
@@ -125,6 +160,7 @@ class RBL(object):
                            cutoff=self.cutoff,
                            n_threads=self.n_threads)
 
+
     def tasks(self):
         yield self.rename_transcriptome_task()
         yield self.rename_database_task()
@@ -147,6 +183,7 @@ class CRBL(RBL):
             self.crbl_output_prefix = '{0}.x.{1}.crbl'.format(base(transcriptome_fn),
                                                             base(database_fn))
             self.crbl_output_fn = self.crbl_output_prefix + '.csv'
+            self.unmapped_crbl_output_fn = self.crbl_output_prefix + '.unmapped.csv'
 
         self.model_fn = model_fn
         if model_fn is None:
@@ -246,7 +283,7 @@ class CRBL(RBL):
     def crbl_fit_task(self):
 
         def do_crbl_fit():
-            rbh_df = pd.read_csv(self.output_fn)
+            rbh_df = pd.read_csv(self.unmapped_output_fn)
             model_df = self.fit_crbh_model(rbh_df)
             model_df.to_csv(self.model_fn, index=False)
 
@@ -264,11 +301,16 @@ class CRBL(RBL):
 
         def do_crbl_filter():
             model_df = pd.read_csv(self.model_fn)
-            rbh_df = pd.read_csv(self.output_fn)
+            rbh_df = pd.read_csv(self.unmapped_output_fn)
             hits_df = pd.read_csv(self.translated_x_db_fn + '.csv')
 
             filtered_df = self.filter_from_model(model_df, rbh_df, hits_df)
             results = pd.concat([rbh_df, filtered_df], axis=0)
+            
+            q_names = pd.read_csv(self.name_map_fn)
+            d_names = pd.read_csv(self.database_name_map_fn)
+            
+            results = self.backmap(results, q_names, d_names)
             results.to_csv(self.crbl_output_fn, index=False)
 
             self.plot_crbl_fit(model_df, rbh_df, hits_df, self.model_plot_fn)
