@@ -34,10 +34,13 @@ def main():
             scripts = glob('bin/*'),
             install_requires = ['pandas',
                                 'numpy',
+                                'matplotlib',
+                                'doit',
+                                'ficus'
                                 ],
             zip_safe = False,
             include_package_data = True,
             cmdclass = cmdclass  )
-        
+
 if __name__ == "__main__":
     main()
