@@ -12,13 +12,12 @@ finally:
 
 from glob import glob
 
-if sys.version_info < (2, 6):
-    print >> sys.stderr, "ERROR: shmlast requires python 2.6 or greater"
+if sys.version_info < (3, 3):
+    print >> sys.stderr, "ERROR: shmlast requires python 3.3 or greater"
     sys.exit()
 
 import shmlast
 
-cmdclass = {}
 
 def main():
     setup(  name = 'shmlast',
@@ -28,16 +27,20 @@ def main():
             author = 'Camille Scott',
             author_email = 'camille.scott.w@gmail.com',
             license = 'BSD',
-            test_suite = 'nose.collector',
-            tests_require = ['nose'],
             packages = find_packages(),
             scripts = glob('bin/*'),
-            install_requires = ['pandas',
-                                'numpy',
-                                ],
-            zip_safe = False,
-            include_package_data = True,
-            cmdclass = cmdclass  )
-        
+            setup_requires = ['pytest-runner'],
+            tests_require = ['pytest'],
+            install_requires = ['doit>=0.29.0',
+                                'ficus>=0.3',
+                                'matplotlib>==1.4',
+                                'numpy>=1.10.0',
+                                'pandas>=0.17.0',
+                                'scipy>=0.17.0',
+                                'screed>=0.9',
+                                'seaborn>=0.6.0'],
+                zip_safe = True,
+                include_package_data = True )
+            
 if __name__ == "__main__":
     main()
