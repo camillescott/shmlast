@@ -32,7 +32,7 @@ class BestHits(object):
         if inplace:
             aln_df.sort_values(by=[self.query_name_col] + self.comparison_cols,
                                inplace=True)
-            aln_df.drop_dupliates(subset=self.query_name_col, inplace=True)
+            aln_df.drop_duplicates(subset=self.query_name_col, inplace=True)
             return aln_df
         else:
             return aln_df.sort_values(
