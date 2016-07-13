@@ -1,0 +1,6 @@
+include README.md
+include setup.cfg
+include LICENSE
+include bin/shmlast
+recursive-include shmlast/tests/data *.fa *.faa *.csv
+graft shmlast/tests
