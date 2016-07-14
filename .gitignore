@@ -2,7 +2,11 @@
 shmlast/*.swp
 
 shmlast/__pycache__
+shmlast/tests/__pycache__
 *.pyc
+.eggs
+.cache
+*.pdf
 
 *.doit.db.db
 *.db.bak

@@ -35,13 +35,15 @@ def rename_task(input_fn, output_fn, name_map_fn='name_map.csv', prefix='tr'):
 @doit_task
 def transeq_task(input_fn, output_fn, clean=True, frame=6):
 
+    exc = which('transeq')
     unwrap = unwrap_fasta()
     params = '-frame {frame}'.format(frame=frame)
     if clean:
         params = '{params} -clean'.format(params=params)
-
-    cmd = 'transeq -sequence {input_fn} {params}'\
-          ' -outseq /dev/stdout | {unwrap} > {output_fn}'.format(**locals())
+    
+    cmd = [exc, '-sequence', input_fn, params, '-outseq',
+           '/dev/stdout', '|', unwrap, '>', output_fn]
+    cmd = ' '.join(cmd)
 
     return {'name': 'transeq',
             'title': title,
