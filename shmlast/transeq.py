@@ -5,7 +5,7 @@ import pandas as pd
 import screed
 
 from .util import create_doit_task as doit_task
-from .util import ShortenedPythonAction, title, unwrap_fasta
+from .util import ShortenedPythonAction, title, unwrap_fasta, which
 
 
 @doit_task
