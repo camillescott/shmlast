@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, platform
+import sys, platform, os
 
 try:
     from setuptools import *
@@ -16,12 +16,11 @@ if sys.version_info < (3, 3):
     print >> sys.stderr, "ERROR: shmlast requires python 3.3 or greater"
     sys.exit()
 
-import shmlast
-
+__version__ = open(os.path.join('ficus', 'VERSION')).read().strip()
 
 def main():
     setup(  name = 'shmlast',
-            version = shmlast.__version__,
+            version = __version__,
             description = 'reciprocal and conditional reciprocal best LAST',
             url = 'https://github.com/camillescott/shmlast',
             author = 'Camille Scott',
