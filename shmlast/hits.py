@@ -39,7 +39,7 @@ class BestHits(object):
                        by=[self.query_name_col] + self.comparison_cols
                    ).drop_duplicates(subset=self.query_name_col)
 
-    def reciprocal_best_hits(self, aln_df_A, aln_df_B, inplace=False, drop_B=True):
+    def reciprocal_best_hits(self, aln_df_A, aln_df_B, inplace=False, drop=True):
         '''Given to DataFrames with reciprocal MAF alignments, get the
         reciprocal best hits.
 
@@ -50,6 +50,7 @@ class BestHits(object):
             aln_df_A (DataFrame): The query hits.
             aln_df_B (DataFrame): The subject hits.
             inplace (bool): Passed to the best_hits calls.
+            drop (bool): Drop extraneous columns and rename.
         Returns:
             DataFrame with the reciprocal best hits.
         '''
@@ -67,7 +68,7 @@ class BestHits(object):
         rbh_df = rbh_df[(rbh_df[self.query_name_col+'_A'] == rbh_df[self.subject_name_col+'_B'])]
 
         # Renamed columns after join
-        if drop_B:
+        if drop:
             rename_d = {}
             for rbh_col in rbh_df.columns:
                 trimmed_col, _, _ = rbh_col.rpartition('_')
