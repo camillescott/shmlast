@@ -33,7 +33,7 @@ def main():
             tests_require = ['pytest'],
             install_requires = ['doit>=0.29.0',
                                 'ficus>=0.3',
-                                'matplotlib>==1.4',
+                                'matplotlib>=1.4',
                                 'numpy>=1.10.0',
                                 'pandas>=0.17.0',
                                 'scipy>=0.17.0',
