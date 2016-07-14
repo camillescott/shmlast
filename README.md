@@ -1,5 +1,7 @@
 # shmlast
 ## blast, shmlast
+[![Build Status](https://travis-ci.org/camillescott/shmlast.svg?branch=master)](https://travis-ci.org/camillescott/shmlast)
+
 
 Implements reciprocal best hits (RBH) and conditional reciprocal best hits (CRBH) using LAST.
 
