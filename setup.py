@@ -16,7 +16,7 @@ if sys.version_info < (3, 3):
     print >> sys.stderr, "ERROR: shmlast requires python 3.3 or greater"
     sys.exit()
 
-__version__ = open(os.path.join('ficus', 'VERSION')).read().strip()
+__version__ = open(os.path.join('shmlast', 'VERSION')).read().strip()
 
 def main():
     setup(  name = 'shmlast',
@@ -32,7 +32,7 @@ def main():
             tests_require = ['pytest',
                              'codecov'],
             install_requires = ['doit>=0.29.0',
-                                'ficus>=0.3',
+                                'ficus>=0.3.2',
                                 'matplotlib>=1.4',
                                 'numpy>=1.10.0',
                                 'pandas>=0.17.0',
