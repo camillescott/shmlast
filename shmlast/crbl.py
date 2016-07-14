@@ -39,12 +39,13 @@ class RBL(object):
         self.translated_x_db_fn = '{0}.x.{1}.maf'.format(base(self.translated_fn),
                                                          base(self.renamed_database_fn))
         self.output_fn = output_fn
+        self.output_prefix = output_fn
         if self.output_fn is None:
             self.output_prefix = '{0}.x.{1}.rbl'.format(base(self.transcriptome_fn),
                                                         base(self.database_fn))
-            self.unmapped_output_fn = self.output_prefix + '.unmapped.csv'
             self.output_fn = self.output_prefix + '.csv'
-
+        self.unmapped_output_fn = self.output_prefix + '.unmapped.csv'
+        
         self.bh = BestHits(comparison_cols=['E', 'EG2'])
 
     @staticmethod
@@ -117,6 +118,8 @@ class RBL(object):
                           right_on='new_name')
         results['s_name'] = results['old_name']
         del results['old_name']
+        del results['new_name_x']
+        del results['new_name_y']
 
         return results
 
@@ -179,6 +182,7 @@ class CRBL(RBL):
 
         self.crbl_output_fn = output_fn
         self.crbl_output_prefix = output_fn
+        self.unmapped_crbl_output_fn = self.crbl_output_fn + '.unmapped.csv'
         if output_fn is None:
             self.crbl_output_prefix = '{0}.x.{1}.crbl'.format(base(transcriptome_fn),
                                                             base(database_fn))
