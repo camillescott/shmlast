@@ -8,6 +8,15 @@ class BestHits(object):
     def __init__(self, comparison_cols=['E'], query_name_col='q_name', 
                  subject_name_col='s_name', query_length_col='q_len',
                  subject_length_col='s_len'):
+        '''Build a BestHits object.
+
+        Args:
+            comparison_cols (list): Columns to compare when determining which
+                hit is "best."
+            query_name_col (str): The column with the query sequence names.
+            subject_name_col (str): The column with the subject suquence names.
+        '''
+
         self.comparison_cols = comparison_cols
         self.query_name_col = query_name_col
         self.subject_name_col = subject_name_col
