@@ -38,9 +38,10 @@ def main():
                                 'pandas>=0.17.0',
                                 'scipy>=0.17.0',
                                 'screed>=0.9',
-                                'seaborn>=0.6.0'],
-                zip_safe = True,
-                include_package_data = True )
+                                'seaborn>=0.6.0',
+                                'pytest>=2.5'],
+            zip_safe = True,
+            include_package_data = True )
             
 if __name__ == "__main__":
     main()
