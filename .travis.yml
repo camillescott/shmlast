@@ -4,8 +4,6 @@ dist: trusty
 python:
   - "3.4"
   - "3.5"
-  - "3.5-dev" # 3.5 development branch
-  - "nightly" # currently points to 3.6-dev
 before_script:
   - curl -LO http://last.cbrc.jp/last-658.zip
   - unzip last-658.zip
