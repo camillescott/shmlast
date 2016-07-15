@@ -10,7 +10,7 @@ python:
 before_script:
   - curl -LO http://last.cbrc.jp/last-658.zip
   - unzip last-658.zip
-  - pushd protobuf-2.4.1 && make && sudo make install && popd
+  - pushd last-658 && make && sudo make install && popd
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y emboss 
