@@ -12,8 +12,8 @@ finally:
 
 from glob import glob
 
-if sys.version_info < (3, 3):
-    print >> sys.stderr, "ERROR: shmlast requires python 3.3 or greater"
+if sys.version_info < (3, 4):
+    print >> sys.stderr, "ERROR: shmlast requires python 3.4 or greater"
     sys.exit()
 
 __version__ = open(os.path.join('shmlast', 'VERSION')).read().strip()
