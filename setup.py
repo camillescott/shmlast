@@ -35,7 +35,7 @@ def main():
                                 'ficus>=0.3.2',
                                 'matplotlib>=1.4',
                                 'numpy>=1.9.0',
-                                'pandas>=0.16.0',
+                                'pandas>=0.17.0',
                                 'scipy>=0.16.0',
                                 'screed>=0.9',
                                 'seaborn>=0.6.0',
