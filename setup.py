@@ -40,7 +40,7 @@ def main():
                                 'screed>=0.9',
                                 'seaborn>=0.6.0',
                                 'pytest>=2.5'],
-            zip_safe = True,
+            zip_safe = False,
             include_package_data = True )
             
 if __name__ == "__main__":
