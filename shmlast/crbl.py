@@ -178,7 +178,7 @@ class RBL(object):
 class CRBL(RBL):
 
     def __init__(self, transcriptome_fn, database_fn, output_fn=None,
-                 model_fn=None, cutoff=.00001, n_threads=1, use_existing_db=True):
+                 model_fn=None, cutoff=.00001, n_threads=1, use_existing_db=None):
 
         self.crbl_output_fn = output_fn
         self.crbl_output_prefix = output_fn
