@@ -12,167 +12,47 @@ import pandas as pd
 import seaborn as sns
 import sys
 
-from .hits import BestHits
-from .last import lastdb_task, lastal_task, MafParser
-from .transeq import transeq_task, rename_task
-from .util import ShortenedPythonAction, title
 
-class RBL(object):
 
-    def __init__(self, transcriptome_fn, database_fn, output_fn=None,
-                 cutoff=.00001, n_threads=1, n_nodes=None, use_existing_db=None):
 
-        self.transcriptome_fn = transcriptome_fn
-        self.renamed_fn = self.transcriptome_fn + '.renamed'
-        self.name_map_fn = self.transcriptome_fn + '.names.csv'
-        self.translated_fn = self.renamed_fn + '.pep'
+def get_reciprocal_best_hits_translated(query_maf, database_maf):
+    bh = BestHits(comparison_cols=['E', 'EG2'])
+    qvd_df = MafParser(query_maf).read()
+    qvd_df[['qg_name', 'q_frame']] = qvd_df.q_name.str.partition('_')[[0,2]]
+    qvd_df.rename(columns={'q_name': 'translated_q_name',
+                           'qg_name': 'q_name'},
+                  inplace=True)
+    qvd_df['ID'] = qvd_df.index
 
-        self.database_fn = database_fn
-        self.renamed_database_fn = self.database_fn + '.renamed'
-        self.database_name_map_fn = self.database_fn + '.names.csv'
-        self.n_threads = n_threads
-        self.cutoff = cutoff
-        self.use_existing_db = use_existing_db
+    dvq_df = MafParser(database_maf).read()
+    dvq_df[['sg_name', 'frame']] = dvq_df.s_name.str.partition('_')[[0,2]]
+    dvq_df.rename(columns={'s_name': 'translated_s_name',
+                           'sg_name': 's_name'},
+                  inplace=True)
+    dvq_df['ID'] = dvq_df.index
+    
+    return besthits.reciprocal_best_hits(qvd_df, dvq_df), qvd_df, dvq_df
 
-        self.db_x_translated_fn = '{0}.x.{1}.maf'.format(base(self.renamed_database_fn),
-                                                         base(self.translated_fn))
-        self.translated_x_db_fn = '{0}.x.{1}.maf'.format(base(self.translated_fn),
-                                                         base(self.renamed_database_fn))
-        self.output_fn = output_fn
-        self.output_prefix = output_fn
-        if self.output_fn is None:
-            self.output_prefix = '{0}.x.{1}.rbl'.format(base(self.transcriptome_fn),
-                                                        base(self.database_fn))
-            self.output_fn = self.output_prefix + '.csv'
-        self.unmapped_output_fn = self.output_prefix + '.unmapped.csv'
-        
-        self.bh = BestHits(comparison_cols=['E', 'EG2'])
 
-    @staticmethod
-    def get_reciprocals(query, database, besthits):
-        qvd_df = MafParser(query).read()
-        qvd_df[['qg_name', 'q_frame']] = qvd_df.q_name.str.partition('_')[[0,2]]
-        qvd_df.rename(columns={'q_name': 'translated_q_name',
-                               'qg_name': 'q_name'},
-                      inplace=True)
-        qvd_df['ID'] = qvd_df.index
+def backmap_names(results_df, q_names, d_names):
 
-        dvq_df = MafParser(database).read()
-        dvq_df[['sg_name', 'frame']] = dvq_df.s_name.str.partition('_')[[0,2]]
-        dvq_df.rename(columns={'s_name': 'translated_s_name',
-                               'sg_name': 's_name'},
-                      inplace=True)
-        dvq_df['ID'] = dvq_df.index
-        
-        return besthits.reciprocal_best_hits(qvd_df, dvq_df), qvd_df, dvq_df
+    results_df = pd.merge(results_df, 
+                          q_names, 
+                          left_on='q_name',
+                          right_on='new_name')
+    results_df['q_name'] = results_df['old_name']
+    del results['old_name']
 
-    def reciprocal_best_last_task(self):
-       
-        def do_reciprocals():
-            rbh_df, qvd_df, dvq_df = RBL.get_reciprocals(self.translated_x_db_fn,
-                                                     self.db_x_translated_fn,
-                                                     self.bh)
-            q_names = pd.read_csv(self.name_map_fn)
-            d_names = pd.read_csv(self.database_name_map_fn)
-
-            rbh_df.to_csv(self.unmapped_output_fn, index=False)
-            qvd_df.to_csv(self.translated_x_db_fn + '.csv', index=False)
-            dvq_df.to_csv(self.db_x_translated_fn + '.csv', index=False)
-
-            rbh_df = self.backmap(rbh_df, q_names, d_names)
-            qvd_df = self.backmap(qvd_df, q_names, d_names)
-            dvq_df = self.backmap(dvq_df, q_names, d_names)
-
-            rbh_df.to_csv(self.output_fn, index=False)
-            qvd_df.to_csv(self.translated_x_db_fn + '.mapped.csv', index=False)
-            dvq_df.to_csv(self.db_x_translated_fn + '.mapped.csv', index=False)
-
-        td = {'name': 'reciprocal_best_last',
-              'title': title,
-              'actions': [ShortenedPythonAction(do_reciprocals)],
-              'file_dep': [self.translated_x_db_fn,
-                           self.db_x_translated_fn],
-              'targets': [self.output_fn + '.csv',
-                          self.translated_x_db_fn + '.csv',
-                          self.db_x_translated_fn + '.csv',
-                          self.output_fn + '.mapped.csv',
-                          self.translated_x_db_fn + '.mapped.csv',
-                          self.db_x_translated_fn + '.mapped.csv'],
-              'clean': [clean_targets]}
-        
-        return dict_to_task(td)
-
-    @staticmethod
-    def backmap(results, q_names, d_names):
-
-        results = pd.merge(results, 
-                           q_names, 
-                           left_on='q_name',
-                           right_on='new_name')
-        results['q_name'] = results['old_name']
-        del results['old_name']
-
-        results = pd.merge(results, 
+    results_df = pd.merge(results_df, 
                           d_names, 
                           left_on='s_name',
                           right_on='new_name')
-        results['s_name'] = results['old_name']
-        del results['old_name']
-        del results['new_name_x']
-        del results['new_name_y']
+    results_df['s_name'] = results_df['old_name']
+    del results_df['old_name']
+    del results_df['new_name_x']
+    del results_df['new_name_y']
 
-        return results
-
-    def rename_transcriptome_task(self):
-        return rename_task(self.transcriptome_fn,
-                           self.renamed_fn,
-                           name_map_fn=self.name_map_fn)
-
-    def rename_database_task(self):
-        return rename_task(self.database_fn,
-                           self.renamed_database_fn,
-                           prefix='db',
-                           name_map_fn=self.database_name_map_fn)
-
-    def translate_task(self):
-        return transeq_task(self.renamed_fn,
-                            self.translated_fn)
-
-    def format_transcriptome_task(self):
-        return lastdb_task(self.translated_fn,
-                           prot=True)
-
-    def format_database_task(self):
-        return lastdb_task(self.renamed_database_fn,
-                           prot=True,
-                           use_existing=self.use_existing_db)
-
-    def align_transcriptome_task(self):
-        return lastal_task(self.translated_fn,
-                           self.renamed_database_fn + '.lastdb',
-                           self.translated_x_db_fn,
-                           translate=False, 
-                           cutoff=self.cutoff,
-                           n_threads=self.n_threads)
-
-    def align_database_task(self):
-        return lastal_task(self.renamed_database_fn,
-                           self.translated_fn + '.lastdb',
-                           self.db_x_translated_fn,
-                           translate=False, 
-                           cutoff=self.cutoff,
-                           n_threads=self.n_threads)
-
-
-    def tasks(self):
-        yield self.rename_transcriptome_task()
-        yield self.rename_database_task()
-        yield self.translate_task()
-        yield self.format_transcriptome_task()
-        yield self.format_database_task()
-        yield self.align_database_task()
-        yield self.align_transcriptome_task()
-        yield self.reciprocal_best_last_task()
+    return results_df
 
 
 class CRBL(RBL):

@@ -118,6 +118,29 @@ def which(program, raise_err=True):
         return None
 
 
+class Move(object):
+
+    def __init__(self, target, create=False):
+        print('Move to', target, file=sys.stderr)
+        self.target = target
+        self.create = create
+   
+    def __enter__(self):
+        self.cwd = os.getcwd()
+        print('cwd:', self.cwd, file=sys.stderr)
+        if self.create:
+            try:
+                os.mkdir(self.target)
+            except OSError:
+                pass
+        os.chdir(self.target)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        os.chdir(self.cwd)
+        if exc_type:
+            return False
+
+
 def parallel_fasta(input_filename, output_filename, command, n_jobs, pbs=False):
 
     exc = which('parallel')
@@ -125,6 +148,7 @@ def parallel_fasta(input_filename, output_filename, command, n_jobs, pbs=False):
            '--gnu', '-j', n_jobs, '-a', input_filename]
     if pbs:
         cmd.extend(['--sshloginfile $PBS_NODEFILE', '--workdir $PWD'])
+    if isinstance(command, list):
+        command = ' '.join(command)
     cmd.extend([command, '>', output_filename])
     return ' '.join(map(str, cmd))
-

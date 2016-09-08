@@ -24,52 +24,53 @@ def clean_lastdb(db_prefix):
 
 
 @doit_task
-def lastdb_task(db_fn, db_out_suffix=None, prot=True, cfg=LASTDB_CFG,
-                use_existing=None):
+def get_lastdb_task(db_fn, db_out_prefix=None, prot=True, params=None,
+                    task_dep=None):
     '''Create a pydoit task to run lastdb.
+
+    WARNING: This does not define a file_dep, to make sure it doesn't
+    get executed when the dependency and targets already exist. This means
+    that if the db_fn is created by another task, it MUST be defined before the
+    lastdb task. This is a kludge which will eventually be fixed...
 
     Args:
         db_fn (str): The FASTA file to format.
-        db_out_prefix (str): Prefix for the database files. Defaults
-            to `<db_fn>.lastdb`.
-        cfg (dict): Config for the command. Shoud contain an entry
-            named "params" storing a str.
+        db_out_prefix (str): Prefix for the database files. Same as db_fn
+                             if None (default).
         prot (bool): True if a protein FASTA, False otherwise.
+        params (list): A list of additional parameters.
     Returns:
         dict: A pydoit task.
     '''
 
-    exc = which('lastdb')
-    params = cfg['params']
-    if use_existing is not None:
-        db_out_suffix = use_existing
-    if db_out_suffix is None:
-        db_out_suffix = '.lastdb'
-    db_out_prefix = db_fn + db_out_suffix
-    
-    cmd = [exc]
+    cmd = [which('lastdb')]
     if prot:
         cmd.append('-p')
+    if params is not None:
+        cmd.extend([str(p) for p in params])
+    if db_out_prefix is None:
+        db_out_prefix = db_fn
     cmd.extend([db_out_prefix, db_fn])
     cmd = ' '.join(cmd)
 
-    name = 'lastdb:{0}'.format(os.path.basename(db_out_prefix))
+    name = 'lastdb:' + os.path.basename(db_out_prefix)
 
-    tskd = {'name': name,
-            'title': title,
-            'actions': [cmd],
-            'targets': [db_out_prefix + '.prj'],
-            'uptodate': [True],
-            'clean': [clean_targets,
-                      (clean_lastdb, [db_out_prefix])]}
-    if not use_existing:
-        tskd['file_dep'] = [db_fn]
+    task_d =  {'name': name,
+              'title': title_with_actions,
+              'actions': [cmd],
+              'targets': ['{0}.prj'.format(db_out_prefix)],
+              'uptodate': [True],
+              'clean': [clean_targets,
+                        (clean_lastdb, [db_out_prefix])}
+    if task_dep is not None:
+        task_d['task_dep'] = task_dep
 
-    return tskd
+    return task_d
+
 
 @doit_task
-def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
-                    translate=False, cfg=LASTAL_CFG, pbs=False):
+def get_lastal_task(query, db, out_fn, translate=False, frameshift=15,
+                    cutoff=0.00001, n_threads=1, pbs=False, params=None):
     '''Create a pydoit task to run lastal
 
     Args:
@@ -77,35 +78,46 @@ def lastal_task(query, db, out_fn, cutoff=0.00001, n_threads=1,
         db (str): The database file prefix.
         out_fn (str): Destination file for alignments.
         translate (bool): True if query is a nucleotide FASTA.
+        frameshift (int): Frameshift penalty for translated alignment.
         n_threads (int): Number of threads to run with.
-        cfg (dict): Config, must contain key params holding str.
+        n_nodes (int): Number of nodes for cluster environments. n_threads
+                       will be the processors per node.
     Returns:
         dict: A pydoit task.
     '''
 
     lastal_exc = which('lastal')
-    parallel_exc = which('parallel-fasta')
-
-    params = cfg['params']
-    lastal_cmd = [lastal_exc]
-    if translate:
-        lastal_cmd.append('-F' + str(cfg['frameshift']))
-    if cutoff is not None:
-        cutoff = round(1.0 / cutoff)
-        lastal_cmd.append('-D' + str(cutoff))
-    lastal_cmd.append(db)
-    lastal_cmd = ' '.join(lastal_cmd)
-
-    cmd = parallel_fasta(query, out_fn, lastal_cmd, n_threads, pbs=pbs)
-
     name = 'lastal:{0}'.format(os.path.join(out_fn))
 
+    cmd = [lastal_exc]
+    if translate:
+        cmd.append('-F' + str(frameshift))
+    if cutoff is not None:
+        cutoff = round(1.0 / cutoff, 2)
+        cmd.append('-D' + str(cutoff))
+    if params is not None:
+        cmd.extend(params)
+    cmd.append(db)
+
+    cmd =  parallel_fasta(query, out_fn, cmd, n_threads, pbs=pbs)
+
     return {'name': name,
-            'title': title,
-            'actions': [LongRunning(cmd)], 
+            'title': title_with_actions,
+            'actions': [cmd],
             'targets': [out_fn],
             'file_dep': [query, db + '.prj'],
             'clean': [clean_targets]}
+
+
+def next_or_raise(fp):
+    counter = count()
+    def func(raise_exc=True):
+        line = fp.readline()
+        n = next(counter)
+        if raise_exc is True and line == '':
+            raise RuntimeError('Malformed MAF file (line {0})'.format(n))
+        return line
+    return func
 
 
 class MafParser(object):
@@ -136,13 +148,13 @@ class MafParser(object):
         '''
         data = []
         with open(self.filename) as fp:
+            guarded_next = next_or_raise(fp)
+            n = 0
             while (True):
-                try:
-                    line = next(fp)
-                except StopIteration:
+                line = guarded_next(raise_exc=False)
+                if line == '':
                     break
-                else:
-                    line = line.strip()
+                line = line.strip()
                 if not line:
                     continue
                 if line.startswith('#'):
@@ -163,8 +175,7 @@ class MafParser(object):
                         cur_aln[key] = float(val)
 
                     # First sequence info
-                    line = next(fp)
-                    line = line.strip()
+                    line = guarded_next()
                     tokens = line.split()
                     cur_aln['s_name'] = tokens[1]
                     cur_aln['s_start'] = int(tokens[2])
@@ -175,8 +186,7 @@ class MafParser(object):
                         cur_aln['s_aln'] = tokens[6]
 
                     # First sequence info
-                    line = next(fp)
-                    line = line.strip()
+                    line = guarded_next() 
                     tokens = line.split()
                     cur_aln['q_name'] = tokens[1]
                     cur_aln['q_start'] = int(tokens[2])
