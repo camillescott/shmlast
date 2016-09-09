@@ -4,9 +4,8 @@ import argparse
 import os
 import sys
 
-from shmlast.crbl import CRBL
-from shmlast.crbl import RBL
-from shmlast.util import prog_string, run_tasks
+from shmlast.app import RBL, CRBL
+from shmlast.util import prog_string
 from shmlast import __version__
 
 
@@ -14,9 +13,8 @@ def rbl_tasks(args):
     print(prog_string('Reciprocal Best LAST', 
                       __version__, args.action))
     rbl = RBL(args.query, args.database, args.output, 
-              n_threads=args.n_threads, cutoff=args.evalue_cutoff,
-              use_existing_db=args.use_existing_db)
-    return rbl.tasks()
+              n_threads=args.n_threads, cutoff=args.evalue_cutoff)
+    return rbl.run(doit_args=[args.action])
 
 
 def crbl_tasks(args):
@@ -24,9 +22,8 @@ def crbl_tasks(args):
                       __version__, args.action))
 
     crbl = CRBL(args.query, args.database, args.output,
-                n_threads=args.n_threads, cutoff=args.evalue_cutoff,
-                use_existing_db=args.use_existing_db)
-    return crbl.tasks()
+                n_threads=args.n_threads, cutoff=args.evalue_cutoff)
+    return crbl.run(doit_args=[args.action])
 
 
 def main():
@@ -43,9 +40,7 @@ def main():
         p.add_argument('--n_threads', type=int, default=1)
         p.add_argument('-e', '--evalue-cutoff', default=0.00001, type=float)
         p.add_argument('--action', default='run')
-        p.add_argument('--use-existing-db', default=None,
-                       help='Use an existing LAST database with this suffix;'\
-                            ' pass an empty string for no suffix')
+
         return p
 
     rbl_parser = add_common_args(subparsers.add_parser('rbl'))
@@ -55,12 +50,8 @@ def main():
     crbl_parser.set_defaults(func=crbl_tasks)
 
     args = parser.parse_args()
-    tasks = args.func(args)
-
-    dep_file = '{0}.shmlast.doit.db'.format(os.path.basename(args.query))
-    return run_tasks(tasks, [args.action], config={'dep_file': dep_file,
-                                            'versbosity': 2})   
-
+    return args.func(args)
+  
 
 if __name__ == '__main__':
     sys.exit(main())

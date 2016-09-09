@@ -18,6 +18,8 @@ if sys.version_info < (3, 4):
 
 __version__ = open(os.path.join('shmlast', 'VERSION')).read().strip()
 
+SCRIPTS=glob('bin/*')
+
 def main():
     setup(  name = 'shmlast',
             version = __version__,
@@ -27,7 +29,7 @@ def main():
             author_email = 'camille.scott.w@gmail.com',
             license = 'BSD',
             packages = find_packages(),
-            scripts = glob('bin/*'),
+            scripts = SCRIPTS,
             setup_requires = ['pytest-runner'],
             tests_require = ['pytest',
                              'codecov'],

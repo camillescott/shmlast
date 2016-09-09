@@ -1,21 +1,18 @@
 #/usr/bin/env python3
 
-from doit.tools import run_once, create_folder
-from doit.task import clean_targets, dict_to_task
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 from ficus import FigureManager
 import numpy as np
-from os.path import basename as base
+from os import path
 import pandas as pd
 import seaborn as sns
-import sys
 
+from .hits import BestHits
+from .last import MafParser
 
-
-
-def get_reciprocal_best_hits_translated(query_maf, database_maf):
+def get_reciprocal_best_last_translated(query_maf, database_maf):
     bh = BestHits(comparison_cols=['E', 'EG2'])
     qvd_df = MafParser(query_maf).read()
     qvd_df[['qg_name', 'q_frame']] = qvd_df.q_name.str.partition('_')[[0,2]]
@@ -31,7 +28,7 @@ def get_reciprocal_best_hits_translated(query_maf, database_maf):
                   inplace=True)
     dvq_df['ID'] = dvq_df.index
     
-    return besthits.reciprocal_best_hits(qvd_df, dvq_df), qvd_df, dvq_df
+    return bh.reciprocal_best_hits(qvd_df, dvq_df), qvd_df, dvq_df
 
 
 def backmap_names(results_df, q_names, d_names):
@@ -41,7 +38,7 @@ def backmap_names(results_df, q_names, d_names):
                           left_on='q_name',
                           right_on='new_name')
     results_df['q_name'] = results_df['old_name']
-    del results['old_name']
+    del results_df['old_name']
 
     results_df = pd.merge(results_df, 
                           d_names, 
@@ -55,165 +52,95 @@ def backmap_names(results_df, q_names, d_names):
     return results_df
 
 
-class CRBL(RBL):
+def scale_evalues(df, name='E', inplace=False):
+    scaled_col_name = name + '_scaled'
+    if inplace is False:
+        df = df.copy()
+    df[scaled_col_name] = df[name]
+    df.loc[df[scaled_col_name] == 0.0, scaled_col_name] = 1e-300
+    df[scaled_col_name] = -np.log10(df[scaled_col_name])
+    return df, scaled_col_name
 
-    def __init__(self, transcriptome_fn, database_fn, output_fn=None,
-                 model_fn=None, cutoff=.00001, n_threads=1, use_existing_db=None):
 
-        self.crbl_output_fn = output_fn
-        self.crbl_output_prefix = output_fn
-        self.unmapped_crbl_output_fn = self.crbl_output_fn + '.unmapped.csv'
-        if output_fn is None:
-            self.crbl_output_prefix = '{0}.x.{1}.crbl'.format(base(transcriptome_fn),
-                                                            base(database_fn))
-            self.crbl_output_fn = self.crbl_output_prefix + '.csv'
-            self.unmapped_crbl_output_fn = self.crbl_output_prefix + '.unmapped.csv'
+def fit_crbh_model(rbh_df, length_col='s_aln_len', feature_col='E'):
 
-        self.model_fn = model_fn
-        if model_fn is None:
-            self.model_fn = self.crbl_output_prefix + '.model.csv'
-        self.model_plot_fn = self.model_fn + '.plot.pdf'
+    data = rbh_df[[length_col, feature_col]].rename(columns={length_col:'length'})
+    data.sort_values('length', inplace=True)
+    _, feature_col = scale_evalues(data, name=feature_col, inplace=True)
 
-        super(CRBL, self).__init__(transcriptome_fn,
-                                    database_fn,
-                                    output_fn=None,
-                                    cutoff=cutoff,
-                                    n_threads=n_threads,
-                                    use_existing_db=use_existing_db)
-
-    @staticmethod
-    def scale_evalue(df, name='E'):
-        df['E_s'] = df[name]
-        df.loc[df['E_s'] == 0.0, 'E_s'] = 1e-300
-        df['E_s'] = -np.log10(df['E_s'])
-
-    @staticmethod
-    def fit_crbh_model(rbh_df):
-
-        data = rbh_df[['s_aln_len', 'E']].rename(columns={'s_aln_len':'length'})
-        data.sort_values('length', inplace=True)
-        CRBL.scale_evalue(data)
-
-        # create a DataFrame for the model, staring with the alignment lengths
-        fit = pd.DataFrame(np.arange(10, data['length'].max()), 
-                           columns=['center'], dtype=int)
-        
-        # create the bins
-        fit['size'] = fit['center'] * 0.1
-        fit.loc[fit['size'] < 5, 'size'] = 5
-        fit['size'] = fit['size'].astype(int)
-        fit['left'] = fit['center'] - fit['size']
-        fit['right'] = fit['center'] + fit['size']
-        
-        # do the fitting: it's just a sliding window with an increasing size
-        def bin_mean(fit_row, df):
-            hits = df[(df['length'] >= fit_row.left) & (df['length'] <= fit_row.right)]
-            return hits['E_s'].mean()
-        fit['fit'] = fit.apply(bin_mean, args=(data,), axis=1)
-        model_df = fit.dropna()
-
-        return model_df
-
-    @staticmethod
-    def filter_from_model(model_df, rbh_df, hits_df):
-
-        CRBL.scale_evalue(hits_df)
-        comp_df = pd.merge(hits_df[hits_df['ID'].isin(rbh_df['ID']) == False], 
-                           model_df, left_on='s_aln_len', right_on='center')
+    # create a DataFrame for the model, staring with the alignment lengths
+    fit = pd.DataFrame(np.arange(10, data['length'].max()), 
+                       columns=['center'], dtype=int)
     
-        crbl_df = comp_df[comp_df['E_s'] >= comp_df['fit']]
+    # create the bins
+    fit['size'] = fit['center'] * 0.1
+    fit.loc[fit['size'] < 5, 'size'] = 5
+    fit['size'] = fit['size'].astype(int)
+    fit['left'] = fit['center'] - fit['size']
+    fit['right'] = fit['center'] + fit['size']
+    
+    # do the fitting: it's just a sliding window with an increasing size
+    def bin_mean(fit_row, df):
+        hits = df[(df['length'] >= fit_row.left) & (df['length'] <= fit_row.right)]
+        return hits[feature_col].mean()
+    fit['fit'] = fit.apply(bin_mean, args=(data,), axis=1)
+    model_df = fit.dropna()
 
-        del crbl_df['center']
-        del crbl_df['left']
-        del crbl_df['right']
-        del crbl_df['fit']
-        del crbl_df['size']
-        del crbl_df['translated_q_name']
+    return model_df
 
-        return crbl_df
 
-    @staticmethod
-    def plot_crbl_fit(model_df, rbh_df, hits_df, model_plot_fn, show=False,
-                     figsize=(10,10)):
+def filter_hits_from_model(model_df, rbh_df, hits_df, feature_col='E',
+                           id_col='ID', length_col='s_aln_len'):
 
-        plt.style.use('seaborn-ticks')
+    hits_df, _ = scale_evalues(hits_df, name=feature_col, inplace=False)
+    rbh_df, scaled_feature_col = scale_evalues(rbh_df, name=feature_col, inplace=False)
 
-        with FigureManager(model_plot_fn, show=show, 
-                           figsize=figsize) as (fig, ax):
+    # Merge the model into the subset of the hits which aren't in RBH
+    comp_df = pd.merge(hits_df[hits_df[id_col].isin(rbh_df[id_col]) == False], 
+                       model_df, left_on=length_col, right_on='center')
 
-            scatter_kws = {'s': 10, 'alpha':0.7}
-            scatter_kws['c'] = sns.xkcd_rgb['ruby']
-            scatter_kws['marker'] = 'o'
-            line_kws = {'c': sns.xkcd_rgb['red wine'], 
-                        'label':'Query Hits Regression'}
-            sample_size = min(len(hits_df), 10000)
-            sns.regplot('s_aln_len', 'E_s', hits_df.sample(sample_size), order=1, 
-                        label='Query Hits', scatter_kws=scatter_kws, 
-                        line_kws=line_kws, color=scatter_kws['c'], ax=ax)
+    crbl_df = comp_df[comp_df[scaled_feature_col] >= comp_df['fit']]
 
-            scatter_kws['c'] = sns.xkcd_rgb['twilight blue']
-            scatter_kws['marker'] = 's'
-            sns.regplot('center', 'fit', model_df, 
-                        fit_reg=False, x_jitter=True, y_jitter=True, ax=ax,
-                        label='CRBL Fit', scatter_kws=scatter_kws, line_kws=line_kws)
+    del crbl_df['center']
+    del crbl_df['left']
+    del crbl_df['right']
+    del crbl_df['fit']
+    del crbl_df['size']
 
-            leg = ax.legend(fontsize='medium', scatterpoints=3, frameon=True)
-            leg.get_frame().set_linewidth(1.0)
+    return crbl_df
 
-            ax.set_xlim(model_df['center'].min(), model_df['center'].max())
-            ax.set_ylim(0, max(model_df['fit'].max(), hits_df['E'].max()) + 50)
-            ax.set_title('CRBL Fit')
 
-    def crbl_fit_task(self):
+def plot_crbh_fit(model_df, hits_df, model_plot_fn, show=False,
+                  figsize=(10,10), feature_col='E', length_col='s_aln_len'):
 
-        def do_crbl_fit():
-            rbh_df = pd.read_csv(self.unmapped_output_fn)
-            model_df = self.fit_crbh_model(rbh_df)
-            model_df.to_csv(self.model_fn, index=False)
+    plt.style.use('seaborn-ticks')
 
-        td = {'name': 'fit_crbl_model',
-              'title': title,
-              'actions': [ShortenedPythonAction(do_crbl_fit)],
-              'file_dep': [self.output_fn, 
-                           self.translated_x_db_fn + '.csv',
-                           self.db_x_translated_fn + '.csv'],
-              'targets': [self.model_fn]}
+    with FigureManager(model_plot_fn, show=show, 
+                       figsize=figsize) as (fig, ax):
 
-        return dict_to_task(td)
+        scatter_kws = {'s': 10, 'alpha':0.7}
+        scatter_kws['c'] = sns.xkcd_rgb['ruby']
+        scatter_kws['marker'] = 'o'
+        line_kws = {'c': sns.xkcd_rgb['red wine'], 
+                    'label':'Query Hits Regression'}
+        sample_size = min(len(hits_df), 5000)
+        hits_df, scaled_col = scale_evalues(hits_df, name=feature_col,
+                                            inplace=False)
+        sns.regplot(length_col, scaled_col, hits_df.sample(sample_size), order=1, 
+                    label='Query Hits', scatter_kws=scatter_kws, 
+                    line_kws=line_kws, color=scatter_kws['c'], ax=ax)
 
-    def crbl_filter_task(self):
+        scatter_kws['c'] = sns.xkcd_rgb['twilight blue']
+        scatter_kws['marker'] = 's'
+        sns.regplot('center', 'fit', model_df, 
+                    fit_reg=False, x_jitter=True, y_jitter=True, ax=ax,
+                    label='CRBL Fit', scatter_kws=scatter_kws, line_kws=line_kws)
 
-        def do_crbl_filter():
-            model_df = pd.read_csv(self.model_fn)
-            rbh_df = pd.read_csv(self.unmapped_output_fn)
-            hits_df = pd.read_csv(self.translated_x_db_fn + '.csv')
+        leg = ax.legend(fontsize='medium', scatterpoints=3, frameon=True)
+        leg.get_frame().set_linewidth(1.0)
 
-            filtered_df = self.filter_from_model(model_df, rbh_df, hits_df)
-            results = pd.concat([rbh_df, filtered_df], axis=0)
-            
-            q_names = pd.read_csv(self.name_map_fn)
-            d_names = pd.read_csv(self.database_name_map_fn)
-            
-            results = self.backmap(results, q_names, d_names)
-            results.to_csv(self.crbl_output_fn, index=False)
+        ax.set_xlim(model_df['center'].min(), model_df['center'].max())
+        ax.set_ylim(0, max(model_df['fit'].max(), hits_df[scaled_col].max()) + 50)
+        ax.set_title('CRBL Fit')
 
-            self.plot_crbl_fit(model_df, rbh_df, hits_df, self.model_plot_fn)
 
-        td = {'name': 'filter_crbl_hits',
-              'title': title,
-              'actions': [ShortenedPythonAction(do_crbl_filter)],
-              'file_dep': [self.output_fn, 
-                           self.translated_x_db_fn + '.csv',
-                           self.db_x_translated_fn + '.csv',
-                           self.model_fn],
-              'targets': [self.crbl_output_fn, 
-                          self.model_plot_fn]}
-
-        return dict_to_task(td)
-
-    def tasks(self):
-        for tsk in super(CRBL, self).tasks():
-            yield tsk
-        yield self.crbl_fit_task()
-        yield self.crbl_filter_task()
-        

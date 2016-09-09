@@ -20,6 +20,7 @@ def unwrap_fasta():
 def leftpad(s):
     return '\n'.join('    {0}'.format(i) for i in s.split('\n'))
 
+
 def title(task):
     """return task name task actions"""
     if task.actions:
@@ -29,6 +30,7 @@ def title(task):
     else:
         title = "Group: %s" % ", ".join(task.task_dep)
     return "%s => \n%s"% (task.name, title)
+
 
 def create_doit_task(task_dict_func):
     '''Wrapper to decorate functions returning pydoit
@@ -58,18 +60,6 @@ def prog_string(subcommand, version, action):
     s.append('doit action: {0}'.format(action))
     s.append('\n\n')
     return ''.join(s)
-
-
-def run_tasks(tasks, args, config={'verbosity': 2}):
-   
-    tasks = list(tasks)
-
-    class Loader(TaskLoader):
-        @staticmethod
-        def load_tasks(cmd, opt_values, pos_args):
-            return tasks, config
-   
-    return DoitMain(Loader()).run(args)
 
 
 class ShortenedPythonAction(PythonInteractiveAction):
@@ -152,3 +142,7 @@ def parallel_fasta(input_filename, output_filename, command, n_jobs, pbs=False):
         command = ' '.join(command)
     cmd.extend([command, '>', output_filename])
     return ' '.join(map(str, cmd))
+
+
+def hidden_fn(fn):
+    return '.{0}'.format(fn)

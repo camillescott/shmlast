@@ -8,6 +8,7 @@ def test_rbl(tmpdir, datadir):
     query = datadir('sacPom.cdna.fa')
     database = datadir('sacPom.pep.fa')
     
+    print(query, database, tmpdir)
     args = ['rbl', '-q', query, '-d', database]
     runscript('shmlast', args, directory=str(tmpdir))
 

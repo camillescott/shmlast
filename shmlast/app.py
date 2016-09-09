@@ -1,16 +1,30 @@
-from .hits import BestHits
+from os import path, getcwd, mkdir
+
+from doit.tools import run_once, create_folder
+from doit.task import clean_targets, dict_to_task
+from doit.cmd_base import TaskLoader
+from doit.doit_cmd import DoitMain
+import pandas as pd
+
+from .crbl import (get_reciprocal_best_last_translated, backmap_names,
+                   scale_evalues, fit_crbh_model, filter_hits_from_model,
+                   plot_crbh_fit)
+
 from .last import lastdb_task, lastal_task, MafParser
 from .transeq import transeq_task, rename_task
-from .util import ShortenedPythonAction, title, Move
+from .util import ShortenedPythonAction, title, Move, hidden_fn
 
 
 class ShmlastApp(TaskLoader):
 
-    def __init__(self, directory, config=None):
+    def __init__(self, directory=None, config=None):
         super(ShmlastApp, self).__init__()
+
+        if directory is None:
+            directory = getcwd()
         self.directory = directory
         try:
-            mkdir(directory)
+            mkdir(self.directory)
         except OSError:
             pass
         self.doit_config = {}
@@ -37,65 +51,58 @@ class ShmlastApp(TaskLoader):
 class RBL(ShmlastApp):
 
     def __init__(self, transcriptome_fn, database_fn, output_fn=None,
-                 cutoff=.00001, n_threads=1, n_nodes=None, use_existing_db=None):
+                 cutoff=.00001, n_threads=1, pbs=False, directory=None):
 
         self.transcriptome_fn = transcriptome_fn
-        self.renamed_fn = self.transcriptome_fn + '.renamed'
-        self.name_map_fn = self.transcriptome_fn + '.names.csv'
+        self.renamed_fn = hidden_fn(path.basename(self.transcriptome_fn) + '.renamed')
+        self.name_map_fn = hidden_fn(path.basename(self.transcriptome_fn) + '.names.csv')
         self.translated_fn = self.renamed_fn + '.pep'
 
         self.database_fn = database_fn
-        self.renamed_database_fn = self.database_fn + '.renamed'
-        self.database_name_map_fn = self.database_fn + '.names.csv'
-        self.n_threads = n_threads
-        self.cutoff = cutoff
-        self.use_existing_db = use_existing_db
+        self.renamed_database_fn = hidden_fn(path.basename(self.database_fn) + '.renamed')
+        self.database_name_map_fn = hidden_fn(path.basename(self.database_fn) + '.names.csv')
 
-        self.db_x_translated_fn = '{0}.x.{1}.maf'.format(base(self.renamed_database_fn),
-                                                         base(self.translated_fn))
-        self.translated_x_db_fn = '{0}.x.{1}.maf'.format(base(self.translated_fn),
-                                                         base(self.renamed_database_fn))
-        self.output_fn = output_fn
-        self.output_prefix = output_fn
-        if self.output_fn is None:
-            self.output_prefix = '{0}.x.{1}.rbl'.format(base(self.transcriptome_fn),
-                                                        base(self.database_fn))
-            self.output_fn = self.output_prefix + '.csv'
-        self.unmapped_output_fn = self.output_prefix + '.unmapped.csv'
+        self.n_threads = n_threads
+        self.pbs = pbs
+        self.cutoff = cutoff
+
+        self.db_x_translated_fn = '{0}.x.{1}.maf'.format(path.basename(self.renamed_database_fn),
+                                                         path.basename(self.translated_fn))
+
+        self.translated_x_db_fn = '{0}.x.{1}.maf'.format(path.basename(self.translated_fn),
+                                                         path.basename(self.renamed_database_fn))
         
+        self.output_fn = output_fn
+        if self.output_fn is None:
+            self.output_fn = '{q}.x.{d}.rbl.csv'.format(q=path.basename(self.transcriptome_fn),
+                                                        d=path.basename(self.database_fn))
+        self.unmapped_output_fn = hidden_fn(self.output_fn)
+        
+        dep_file = '{0}.shmlast.doit.db'.format(path.basename(self.transcriptome_fn))
+        super(RBL, self).__init__(directory=directory, 
+                                  config={'dep_file': dep_file})
 
     def reciprocal_best_last_task(self):
        
         def do_reciprocals():
-            rbh_df, qvd_df, dvq_df = RBL.get_reciprocals(self.translated_x_db_fn,
-                                                     self.db_x_translated_fn,
-                                                     self.bh)
+            rbh_df, qvd_df, dvq_df = get_reciprocal_best_last_translated(self.translated_x_db_fn,
+                                                                         self.db_x_translated_fn)
             q_names = pd.read_csv(self.name_map_fn)
             d_names = pd.read_csv(self.database_name_map_fn)
 
             rbh_df.to_csv(self.unmapped_output_fn, index=False)
-            qvd_df.to_csv(self.translated_x_db_fn + '.csv', index=False)
-            dvq_df.to_csv(self.db_x_translated_fn + '.csv', index=False)
-
-            rbh_df = self.backmap(rbh_df, q_names, d_names)
-            qvd_df = self.backmap(qvd_df, q_names, d_names)
-            dvq_df = self.backmap(dvq_df, q_names, d_names)
-
+            rbh_df = backmap_names(rbh_df, q_names, d_names)
             rbh_df.to_csv(self.output_fn, index=False)
-            qvd_df.to_csv(self.translated_x_db_fn + '.mapped.csv', index=False)
-            dvq_df.to_csv(self.db_x_translated_fn + '.mapped.csv', index=False)
 
         td = {'name': 'reciprocal_best_last',
               'title': title,
               'actions': [ShortenedPythonAction(do_reciprocals)],
               'file_dep': [self.translated_x_db_fn,
-                           self.db_x_translated_fn],
-              'targets': [self.output_fn + '.csv',
-                          self.translated_x_db_fn + '.csv',
-                          self.db_x_translated_fn + '.csv',
-                          self.output_fn + '.mapped.csv',
-                          self.translated_x_db_fn + '.mapped.csv',
-                          self.db_x_translated_fn + '.mapped.csv'],
+                           self.db_x_translated_fn,
+                           self.name_map_fn,
+                           self.database_name_map_fn],
+              'targets': [self.unmapped_output_fn,
+                          self.output_fn],
               'clean': [clean_targets]}
         
         return dict_to_task(td)
@@ -121,24 +128,25 @@ class RBL(ShmlastApp):
 
     def format_database_task(self):
         return lastdb_task(self.renamed_database_fn,
-                           prot=True,
-                           use_existing=self.use_existing_db)
+                           prot=True)
 
     def align_transcriptome_task(self):
         return lastal_task(self.translated_fn,
-                           self.renamed_database_fn + '.lastdb',
+                           self.renamed_database_fn,
                            self.translated_x_db_fn,
                            translate=False, 
                            cutoff=self.cutoff,
-                           n_threads=self.n_threads)
+                           n_threads=self.n_threads,
+                           pbs=self.pbs)
 
     def align_database_task(self):
         return lastal_task(self.renamed_database_fn,
-                           self.translated_fn + '.lastdb',
+                           self.translated_fn,
                            self.db_x_translated_fn,
                            translate=False, 
                            cutoff=self.cutoff,
-                           n_threads=self.n_threads)
+                           n_threads=self.n_threads,
+                           pbs=self.pbs)
 
 
     def tasks(self):
@@ -151,3 +159,72 @@ class RBL(ShmlastApp):
         yield self.align_transcriptome_task()
         yield self.reciprocal_best_last_task()
 
+
+class CRBL(RBL):
+
+    def __init__(self, transcriptome_fn, database_fn, output_fn=None,
+                 model_fn=None, cutoff=.00001, n_threads=1, pbs=False):
+
+        prefix = '{q}.x.{d}.crbl'.format(q=path.basename(transcriptome_fn),
+                                         d=path.basename(database_fn))
+
+        self.crbl_output_fn = output_fn
+        if output_fn is None:
+            self.crbl_output_fn = prefix + '.csv'
+        self.unmapped_crbl_output_fn = hidden_fn(self.crbl_output_fn)
+
+        self.model_fn = model_fn
+        if model_fn is None:
+            self.model_fn = prefix + '.model.csv'
+            self.model_plot_fn = prefix + '.model.plot.pdf'
+        else:
+            self.model_plot_fn = self.model_fn + '.plot.pdf'
+
+        super(CRBL, self).__init__(transcriptome_fn,
+                                    database_fn,
+                                    output_fn=None,
+                                    cutoff=cutoff,
+                                    n_threads=n_threads,
+                                    pbs=pbs)
+
+
+    def crbl_fit_and_filter_task(self):
+
+        def do_crbl_fit_and_filter():
+            rbh_df, hits_df, _ = get_reciprocal_best_last_translated(self.translated_x_db_fn,
+                                                                     self.db_x_translated_fn)
+            
+            model_df = fit_crbh_model(rbh_df)
+            model_df.to_csv(self.model_fn, index=False)
+            model_df = pd.read_csv(self.model_fn)
+
+            filtered_df = filter_hits_from_model(model_df, rbh_df, hits_df)
+            results = pd.concat([rbh_df, filtered_df], axis=0)
+            del results['translated_q_name']
+
+            q_names = pd.read_csv(self.name_map_fn)
+            d_names = pd.read_csv(self.database_name_map_fn)
+            
+            results = backmap_names(results, q_names, d_names)
+            results.to_csv(self.crbl_output_fn, index=False)
+
+            plot_crbh_fit(model_df, hits_df, self.model_plot_fn)
+
+        td = {'name': 'fit_and_filter_crbl_hits',
+              'title': title,
+              'actions': [ShortenedPythonAction(do_crbl_fit_and_filter)],
+              'file_dep': [self.translated_x_db_fn,
+                           self.name_map_fn,
+                           self.database_name_map_fn],
+              'targets': [self.crbl_output_fn, 
+                          self.model_plot_fn,
+                          self.model_fn]}
+        
+        return dict_to_task(td)
+
+    def tasks(self):
+        for tsk in super(CRBL, self).tasks():
+            if tsk.name != 'reciprocal_best_last':
+                yield tsk
+        yield self.crbl_fit_and_filter_task()
+        
