@@ -11,9 +11,9 @@ import pandas as pd
 from .util import create_doit_task as doit_task
 from .util import which, parallel_fasta, title
 
-LASTAL_CFG = { "params": "",
+LASTAL_CFG = { "params": [],
                "frameshift": 15 }
-LASTDB_CFG = { "params": "-w3" }
+LASTDB_CFG = { "params": ["-w3"] }
 
 def clean_lastdb(db_prefix):
     files = glob.glob('{0}.*'.format(db_prefix))
@@ -25,8 +25,8 @@ def clean_lastdb(db_prefix):
 
 
 @doit_task
-def lastdb_task(db_fn, db_out_prefix=None, prot=True, params=None,
-                task_dep=None):
+def lastdb_task(db_fn, db_out_prefix=None, prot=True,
+                params=LASTDB_CFG['params'], task_dep=None):
     '''Create a pydoit task to run lastdb.
 
     WARNING: This does not define a file_dep, to make sure it doesn't
@@ -70,8 +70,9 @@ def lastdb_task(db_fn, db_out_prefix=None, prot=True, params=None,
 
 
 @doit_task
-def lastal_task(query, db, out_fn, translate=False, frameshift=15,
-                cutoff=0.00001, n_threads=1, pbs=False, params=None):
+def lastal_task(query, db, out_fn, translate=False,
+                frameshift=LASTAL_CFG['frameshift'], cutoff=0.00001, 
+                n_threads=1, pbs=False, params=None):
     '''Create a pydoit task to run lastal
 
     Args:

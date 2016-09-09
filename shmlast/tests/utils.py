@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
-from io import StringIO
 import os
 from pkg_resources import Requirement, resource_filename, ResolutionError
 import shutil
+import stat
 import sys
 from tempfile import mkdtemp
 import traceback
@@ -10,6 +10,15 @@ import traceback
 from distutils import dir_util
 from pytest import fixture
 
+
+from doit.cmd_base import TaskLoader
+from doit.doit_cmd import DoitMain
+from doit.dependency import Dependency, DbmDB
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 @fixture
 def datadir(tmpdir, request):
@@ -29,6 +38,44 @@ def datadir(tmpdir, request):
         return filepath
 
     return getter
+
+
+def check_status(task, tasks=None, dep_file='.doit.db'):
+    if tasks is None:
+        tasks = [task]
+    mgr = Dependency(DbmDB, os.path.abspath(dep_file))
+    status = mgr.get_status(task, tasks)
+    return status
+
+
+def run_tasks(tasks, args, config={'verbosity': 0}):
+    
+    if type(tasks) is not list:
+        raise TypeError('tasks must be a list')
+   
+    class Loader(TaskLoader):
+        @staticmethod
+        def load_tasks(cmd, opt_values, pos_args):
+            return tasks, config
+   
+    return DoitMain(Loader()).run(args)
+
+
+def run_task(task, cmd='run', verbosity=0):
+    return run_tasks([task], [cmd], config={'verbosity': verbosity})
+
+
+def touch(filename):
+    '''Perform the equivalent of bash's touch on the file.
+
+    Args:
+        filename (str): File path to touch.
+    '''
+
+    open(filename, 'a').close()
+    os.chmod(filename, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
 
 '''
 These script running functions were taken from the khmer project:
