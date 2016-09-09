@@ -19,7 +19,7 @@ install:
     else
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     fi
-  - curl -O http://ftpmirror.gnu.org/parallel/parallel-20160822.tar.bz2
+  - curl -O http://ftp.gnu.org/gnu/parallel/parallel-20160822.tar.bz2
   - tar -xvjf parallel-20160822.tar.bz2
   - pushd parallel-20160822 && ./configure && make && sudo make install && popd
   - bash miniconda.sh -b -p $HOME/miniconda
