@@ -14,7 +14,8 @@ def rbl_tasks(args):
                       __version__, args.action))
     rbl = RBL(args.query, args.database, args.output, 
               n_threads=args.n_threads, cutoff=args.evalue_cutoff)
-    return rbl.run(doit_args=[args.action])
+    return rbl.run(doit_args=[args.action], 
+                   profile_fn=args.profile and args.profile_output)
 
 
 def crbl_tasks(args):
@@ -23,7 +24,8 @@ def crbl_tasks(args):
 
     crbl = CRBL(args.query, args.database, args.output,
                 n_threads=args.n_threads, cutoff=args.evalue_cutoff)
-    return crbl.run(doit_args=[args.action])
+    return crbl.run(doit_args=[args.action], 
+                    profile_fn=args.profile and args.profile_output)
 
 
 def main():
@@ -40,6 +42,8 @@ def main():
         p.add_argument('--n_threads', type=int, default=1)
         p.add_argument('-e', '--evalue-cutoff', default=0.00001, type=float)
         p.add_argument('--action', default='run')
+        p.add_argument('--profile', action='store_true', default=False)
+        p.add_argument('--profile-output', default=None)
 
         return p
 

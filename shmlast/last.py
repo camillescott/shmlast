@@ -8,6 +8,7 @@ import numpy as np
 import os
 import pandas as pd
 
+from .profile import profile_task
 from .util import create_doit_task as doit_task
 from .util import which, parallel_fasta, title
 
@@ -25,6 +26,7 @@ def clean_lastdb(db_prefix):
 
 
 @doit_task
+@profile_task
 def lastdb_task(db_fn, db_out_prefix=None, prot=True,
                 params=LASTDB_CFG['params'], task_dep=None):
     '''Create a pydoit task to run lastdb.
@@ -70,6 +72,7 @@ def lastdb_task(db_fn, db_out_prefix=None, prot=True,
 
 
 @doit_task
+@profile_task
 def lastal_task(query, db, out_fn, translate=False,
                 frameshift=LASTAL_CFG['frameshift'], cutoff=0.00001, 
                 n_threads=1, pbs=False, params=None):

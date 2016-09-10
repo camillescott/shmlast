@@ -4,11 +4,13 @@ from doit.task import clean_targets
 import pandas as pd
 import screed
 
+from .profile import profile_task
 from .util import create_doit_task as doit_task
 from .util import ShortenedPythonAction, title, unwrap_fasta, which
 
 
 @doit_task
+@profile_task
 def rename_task(input_fn, output_fn, name_map_fn='name_map.csv', prefix='tr'):
     
     def rename_input():
@@ -33,6 +35,7 @@ def rename_task(input_fn, output_fn, name_map_fn='name_map.csv', prefix='tr'):
 
 
 @doit_task
+@profile_task
 def transeq_task(input_fn, output_fn, clean=True, frame=6):
 
     exc = which('transeq')

@@ -58,7 +58,6 @@ def prog_string(subcommand, version, action):
     s.append('subcommand: {0}'.format(subcommand))
     s.append('\n')
     s.append('doit action: {0}'.format(action))
-    s.append('\n\n')
     return ''.join(s)
 
 

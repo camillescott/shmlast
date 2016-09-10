@@ -10,9 +10,11 @@ from .crbl import (get_reciprocal_best_last_translated, backmap_names,
                    scale_evalues, fit_crbh_model, filter_hits_from_model,
                    plot_crbh_fit)
 
+from .profile import StartProfiler, profile_task
 from .last import lastdb_task, lastal_task, MafParser
 from .transeq import transeq_task, rename_task
 from .util import ShortenedPythonAction, title, Move, hidden_fn
+from .util import create_doit_task as doit_task
 
 
 class ShmlastApp(TaskLoader):
@@ -37,10 +39,20 @@ class ShmlastApp(TaskLoader):
     def load_tasks(self, cmd, opt_values, pos_args):
         return list(self.tasks()), self.doit_config
 
-    def run(self, doit_args=None, move=False):
+    def run(self, doit_args=None, move=False, profile_fn=None):
         if doit_args is None:
             doit_args = ['run']
         runner = DoitMain(self)
+        
+        if profile_fn is not False and doit_args[0] == 'run':
+            with StartProfiler(filename=profile_fn):
+                self._run(doit_args, move, runner)
+        else:
+            self._run(doit_args, move, runner)
+
+
+    def _run(self, doit_args, move, runner):
+        print('\n--- Begin Task Execution ---')
         if move:
             with Move(self.directory):
                 return runner.run(doit_args)
@@ -82,6 +94,8 @@ class RBL(ShmlastApp):
         super(RBL, self).__init__(directory=directory, 
                                   config={'dep_file': dep_file})
 
+    @doit_task
+    @profile_task
     def reciprocal_best_last_task(self):
        
         def do_reciprocals():
@@ -105,7 +119,7 @@ class RBL(ShmlastApp):
                           self.output_fn],
               'clean': [clean_targets]}
         
-        return dict_to_task(td)
+        return td
 
     def rename_transcriptome_task(self):
         return rename_task(self.transcriptome_fn,
@@ -187,7 +201,8 @@ class CRBL(RBL):
                                     n_threads=n_threads,
                                     pbs=pbs)
 
-
+    @doit_task
+    @profile_task
     def crbl_fit_and_filter_task(self):
 
         def do_crbl_fit_and_filter():
@@ -218,9 +233,10 @@ class CRBL(RBL):
                            self.database_name_map_fn],
               'targets': [self.crbl_output_fn, 
                           self.model_plot_fn,
-                          self.model_fn]}
+                          self.model_fn],
+              'clean': [clean_targets]}
         
-        return dict_to_task(td)
+        return td
 
     def tasks(self):
         for tsk in super(CRBL, self).tasks():
