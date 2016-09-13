@@ -9,7 +9,7 @@ from shmlast.util import prog_string
 from shmlast import __version__
 
 
-def rbl_tasks(args):
+def rbl_func(args):
     print(prog_string('Reciprocal Best LAST', 
                       __version__, args.action))
     rbl = RBL(args.query, args.database, args.output, 
@@ -18,7 +18,7 @@ def rbl_tasks(args):
                    profile_fn=args.profile and args.profile_output)
 
 
-def crbl_tasks(args):
+def crbl_func(args):
     print(prog_string('Conditional Reciprocal Best LAST', 
                       __version__, args.action))
 
@@ -48,10 +48,10 @@ def main():
         return p
 
     rbl_parser = add_common_args(subparsers.add_parser('rbl'))
-    rbl_parser.set_defaults(func=rbl_tasks)
+    rbl_parser.set_defaults(func=rbl_func)
 
     crbl_parser = add_common_args(subparsers.add_parser('crbl'))
-    crbl_parser.set_defaults(func=crbl_tasks)
+    crbl_parser.set_defaults(func=crbl_func)
 
     args = parser.parse_args()
     return args.func(args)
