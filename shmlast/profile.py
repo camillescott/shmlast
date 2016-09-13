@@ -1,7 +1,10 @@
 import csv
+import filelock
 import sys
 import time
+import warnings
 from contextlib import contextmanager
+from os import path
 
 
 class Profiler(object):
@@ -19,13 +22,22 @@ class Profiler(object):
         self.start_time = time.time()
         self.blockname = blockname
         self.running = True
+        self.lock = filelock.Filelock('{0}.lock'.format(self.filename))
         print('Profiling is ON:', self.filename, '\n', file=sys.stderr)
 
     def write_result(self, task_name, start_time, end_time, elapsed_time):
-        with open(self.filename, 'a') as fp:
-            writer = csv.writer(fp, delimiter=',')
-            row = [self.run_name, task_name, start_time, end_time, elapsed_time]
-            writer.writerow(row)
+        try:
+            with lock.acquire(timeout=10):
+                header = not path.isfile(self.filename)
+                with open(self.filename, 'a') as fp:
+                    writer = csv.writer(fp, delimiter=',')
+                    if header:
+                        writer.write(['run_id', 'block', 'start_t', 'end_t',
+                                      'elapsed_t'])
+                    row = [self.run_name, task_name, start_time, end_time, elapsed_time]
+                    writer.writerow(row)
+        except filelock.Timeout as e:
+            warnings.warn(e, RuntimeWarning, stacklevel=1)
 
     def stop_profiler(self):
         self.end_time = time.time()

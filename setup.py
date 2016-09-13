@@ -41,7 +41,8 @@ def main():
                                 'scipy>=0.16.0',
                                 'screed>=0.9',
                                 'seaborn>=0.6.0',
-                                'pytest>=2.5'],
+                                'pytest>=2.5',
+                                'filelock>=2.0.6'],
             zip_safe = False,
             include_package_data = True )
             
