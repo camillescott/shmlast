@@ -26,7 +26,7 @@ def rename_task(input_fn, output_fn, name_map_fn='name_map.csv', prefix='tr'):
                      columns=['old_name', 'new_name']).to_csv(name_map_fn,
                                                               index=False)
 
-    return {'name': 'rename-{0}'.format(input_fn),
+    return {'name': 'rename:{0}'.format(input_fn),
             'title': title,
             'actions': [ShortenedPythonAction(rename_input)],
             'targets': [output_fn, name_map_fn],
@@ -48,7 +48,7 @@ def transeq_task(input_fn, output_fn, clean=True, frame=6):
            '/dev/stdout', '|', unwrap, '>', output_fn]
     cmd = ' '.join(cmd)
 
-    return {'name': 'transeq',
+    return {'name': 'transeq:{0}'.format(input_fn),
             'title': title,
             'actions': [cmd],
             'targets': [output_fn],
