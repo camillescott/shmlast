@@ -46,9 +46,9 @@ class ShmlastApp(TaskLoader):
         
         if profile_fn is not False and doit_args[0] == 'run':
             with StartProfiler(filename=profile_fn):
-                self._run(doit_args, move, runner)
+                return self._run(doit_args, move, runner)
         else:
-            self._run(doit_args, move, runner)
+            return self._run(doit_args, move, runner)
 
 
     def _run(self, doit_args, move, runner):
