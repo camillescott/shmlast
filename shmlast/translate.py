@@ -4,7 +4,7 @@ import screed
 
 from .profile import profile_task
 from .util import create_doit_task as doit_task
-from .util import ShortenedPythonAction, title, unwrap_fasta, which
+from .util import ShortenedPythonAction, title, which
 
 
 dna_to_aa={'TTT':'F','TTC':'F', 'TTA':'L','TTG':'L',

@@ -11,12 +11,6 @@ from doit.cmd_base import TaskLoader
 from doit.doit_cmd import DoitMain
 
 
-def unwrap_fasta():
-     return 'python -c "import screed; import sys; list(map('\
-            'lambda record: sys.stdout.write(\'>{0}\\n{1}\\n\'.format('\
-            'record.name, record.sequence)), screed.open(sys.stdin.fileno())))"'
-
-
 def leftpad(s):
     return '\n'.join('    {0}'.format(i) for i in s.split('\n'))
 
@@ -105,29 +99,6 @@ def which(program, raise_err=True):
         raise DependencyError('{0} not found; is it installed?'.format(program))
     else:
         return None
-
-
-class Move(object):
-
-    def __init__(self, target, create=False):
-        print('Move to', target, file=sys.stderr)
-        self.target = target
-        self.create = create
-   
-    def __enter__(self):
-        self.cwd = os.getcwd()
-        print('cwd:', self.cwd, file=sys.stderr)
-        if self.create:
-            try:
-                os.mkdir(self.target)
-            except OSError:
-                pass
-        os.chdir(self.target)
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        os.chdir(self.cwd)
-        if exc_type:
-            return False
 
 
 def parallel_fasta(input_filename, output_filename, command, n_jobs, pbs=False):

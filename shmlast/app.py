@@ -13,7 +13,7 @@ from .crbl import (get_reciprocal_best_last_translated, backmap_names,
 from .profile import StartProfiler, profile_task
 from .last import lastdb_task, lastal_task, MafParser
 from .translate import translate_task, rename_task
-from .util import ShortenedPythonAction, title, Move, hidden_fn
+from .util import ShortenedPythonAction, title, hidden_fn
 from .util import create_doit_task as doit_task
 
 
@@ -43,18 +43,10 @@ class ShmlastApp(TaskLoader):
         if doit_args is None:
             doit_args = ['run']
         runner = DoitMain(self)
-        
+
+        print('\n--- Begin Task Execution ---')
         if profile_fn is not False and doit_args[0] == 'run':
             with StartProfiler(filename=profile_fn):
-                return self._run(doit_args, move, runner)
-        else:
-            return self._run(doit_args, move, runner)
-
-
-    def _run(self, doit_args, move, runner):
-        print('\n--- Begin Task Execution ---')
-        if move:
-            with Move(self.directory):
                 return runner.run(doit_args)
         else:
             return runner.run(doit_args)
