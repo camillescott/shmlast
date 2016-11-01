@@ -22,13 +22,15 @@ an initial set of RBH's. From their github:
     function to the distribution of alignment e-values over sequence lengths. The function provides the
     e-value cutoff for a sequence of given length."
 
-Unfortunately, the original implementation uses NCBI BLAST+, which is incredibly slow, and is
+Unfortunately, the original implementation uses NCBI BLAST+ (which is incredibly slow), and is
 implemented in Ruby, which requires users to leave the Python-dominated bioinformatics software
 system. shmlast makes this algorithm available to users in Python-land, while also greatly improving
 performance by using LAST for initial homology searches. Additionally, shmlast outputs both the raw
 parameters and a plot of its model for inspection.
 
-shmlast is designed for finding orthologs between *transcriptomes and protein databases*. As such, it currently does not support nucleotide-nucleotide or protein-protein alignments. This may be changed in a future version, but for now, it remains focused on that task.
+shmlast is designed for finding orthologs between *transcriptomes and protein databases*. As such, it currently does not
+support nucleotide-nucleotide or protein-protein alignments. This may be changed in a future version, but for now, 
+it remains focused on that task.
 
 Also note that RBH, and by extension CRBH, is meant for comparing between *two species*. Neither of these methods should
 be used for annotating a transcriptome with a mixed protein database (like, for example, uniref90).
