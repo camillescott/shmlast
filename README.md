@@ -1,14 +1,14 @@
 # shmlast
-## blast, shmlast
 
 [![Build Status](https://travis-ci.org/camillescott/shmlast.svg?branch=master)](https://travis-ci.org/camillescott/shmlast)
 [![codecov](https://codecov.io/gh/camillescott/shmlast/branch/master/graph/badge.svg)](https://codecov.io/gh/camillescott/shmlast)
 
-shmlast is a reimplementation of [Conditional Reciprocal Best
-Hits](https://github.com/cboursnell/crb-blast) (crb-blast). It uses the [LAST](http://last.cbrc.jp/)
+shmlast is a reimplementation of the [Conditional Reciprocal Best
+Hits](https://github.com/cboursnell/crb-blast) algorithm for finding potential orthologs between
+a transcriptome and a species-specific protein database. It uses the [LAST](http://last.cbrc.jp/)
 aligner and the pydata stack to achieve much better performance while staying in the Python ecosystem. 
 
-### About
+## About
 
 As described in the original publication ([Aubry et al.
 2014](http://www.plosgenetics.org/article/info%3Adoi%2F10.1371%2Fjournal.pgen.1004365)), conditional
@@ -35,7 +35,7 @@ it remains focused on that task.
 Also note that RBH, and by extension CRBH, is meant for comparing between *two species*. Neither of these methods should
 be used for annotating a transcriptome with a mixed protein database (like, for example, uniref90).
 
-### Output
+## Output
 
 shmlast outputs a plain CSV file with the CRBH's, which by default will be named `$QUERY.x.$DATABASE.crbl.csv`. This CSV
 file can be easily parsed with Pandas like so:
@@ -85,7 +85,7 @@ value to allow the log-scaling. The *fit* column of the model is thus this scale
 
 The model plot is named `$QUERY.x.$DATABASE.crbl.model.plot.pdf` by default.
 
-### Installation
+## Installation
 
 I recommend the Anaconda (or miniconda) Python distribution. To install into an Anaconda
 environment, first get dependencies via conda:
@@ -100,11 +100,11 @@ And then install shmlast and its PyPI dependencies with pip:
 pip install shmlast
 ```
 
-### Third-party Dependencies
+## Third-party Dependencies
 
 shmlast requires the LAST aligner and gnu-parallel.
 
-#### Manually
+### Manually
 
 LAST can be installed manually into your home directory like so:
 
@@ -121,7 +121,7 @@ And a recent version of gnu-parallel can be installed like so:
 (wget -O - pi.dk/3 || curl pi.dk/3/ || fetch -o - http://pi.dk/3) | bash
 ```
 
-#### Through a Package Manager
+### Through a Package Manager
 
 For Ubuntu 16.04 or newer, sufficiently new versions of both are available
 through the package manager:
@@ -135,7 +135,7 @@ brew tap homebrew/science
 brew install last
 ```
 
-### Library
+## Library
 
 shmlast is also a Python library. Each component of the pipeline is implemented as a
 [pydoit](http://pydoit.org) task and can be used in doit workflows, and the implementations for calculating best hits,
@@ -149,12 +149,12 @@ def task_lastal():
     return lastal_task('query.fna', 'db.faa', translate=True)
 ```
 
-### Known Issues
+## Known Issues
 
 There is an incompatibility between seaborn and matplotlib version 1.5.3. For that reason, the
 required matplotlib version is locked to 1.5.1.
 
-### References
+## References
 
 1. Aubry S, Kelly S, Kümpers BMC, Smith-Unna RD, Hibberd JM (2014) Deep Evolutionary Comparison of
    Gene Expression Identifies Parallel Recruitment of Trans-Factors in Two Independent Origins of C4
