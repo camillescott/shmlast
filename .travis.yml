@@ -10,7 +10,6 @@ before_script:
   - pushd last-658 && make && sudo make install && popd
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y emboss
 # command to install dependencies
 install:
   - sudo apt-get update
@@ -28,7 +27,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -n test python=$TRAVIS_PYTHON_VERSION numpy scipy pandas=0.17.0 matplotlib pytest pytest-cov coverage sphinx nose seaborn
+  - conda create -q -n test python=$TRAVIS_PYTHON_VERSION numpy scipy pandas=0.17.0 matplotlib==1.5.1 pytest pytest-cov coverage sphinx nose seaborn
   - source activate test
   - pip install -U codecov
   - python setup.py install
