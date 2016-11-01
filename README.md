@@ -28,6 +28,11 @@ system. shmlast makes this algorithm available to users in Python-land, while al
 performance by using LAST for initial homology searches. Additionally, shmlast outputs both the raw
 parameters and a plot of its model for inspection.
 
+shmlast is designed for finding orthologs between *transcriptomes and protein databases*. As such, it currently does not support nucleotide-nucleotide or protein-protein alignments. This may be changed in a future version, but for now, it remains focused on that task.
+
+Also note that RBH, and by extension CRBH, is meant for comparing between *two species*. Neither of these methods should
+be used for annotating a transcriptome with a mixed protein database (like, for example, uniref90).
+
 ### Output
 
 shmlast outputs a plain CSV file with the CRBH's, which by default will be named `$QUERY.x.$DATABASE.crbl.csv`. This CSV
@@ -43,7 +48,7 @@ The columns are:
 
 1. *E*: The e-value.
 2. *EG2*: Expected alignments per square giga.
-3. *E_scaled*: E-value scaled for the model.
+3. *E_scaled*: E-value rescaled for the model (see below for details).
 4. *ID*: A unique ID for the alignment.
 5. *bitscore*: The bitscore, calculated as (lambda * score - ln[K]) / ln[2].
 6. *q_aln_len*: Query alignment length.
@@ -131,7 +136,7 @@ brew install last
 ### Library
 
 shmlast is also a Python library. Each component of the pipeline is implemented as a
-[pydoit](pydoit.org) task and can be used in doit workflows, and the implementations for calculating best hits,
+[pydoit](http://pydoit.org) task and can be used in doit workflows, and the implementations for calculating best hits,
 reciprocal best hits, and conditional reciprocal best hits are relatively easily usable as Python
 classes. For example, the `lastal` task could be incorporated into a doit file like so:
 
@@ -144,7 +149,7 @@ def task_lastal():
 
 ### Known Issues
 
-There is a weird incompatibility between seaborn and matplotlib version 1.5.3. For that reason, the
+There is an incompatibility between seaborn and matplotlib version 1.5.3. For that reason, the
 required matplotlib version is locked to 1.5.1.
 
 ### References
