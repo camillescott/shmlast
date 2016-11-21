@@ -13,4 +13,9 @@ def task_test():
     return {'actions': [setupcmd(['test'])]}
 
 def task_publish():
-    return {'actions': [setupcmd(['sdist', 'upload'])]}
+    return {'actions': ['rm -rf shmlast/tests/__pycache__',
+                        'rm -rf shmlast/__pycache__',
+                        'pandoc README.md -o README.rst',
+                        setupcmd(['sdist', 'upload'])],
+            'file_dep': ['shmlast/VERSION'],
+            'targets': ['README.rst']}

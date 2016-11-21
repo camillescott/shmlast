@@ -76,6 +76,7 @@ def main():
         p.add_argument('--profile-output', default=None,
                        help='Filename for profile results.')
         p.add_argument('--sshloginfile', dest='pbs',  default=None,
+                       metavar='SSHLOGINFILE',
                        help='Distribute execution across the specified nodes.')
 
         return p

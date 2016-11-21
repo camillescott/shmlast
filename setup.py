@@ -25,6 +25,7 @@ def main():
             version = __version__,
             description = 'An improved implementation of Conditional Reciprocal'\
                           ' Best Hits with LAST and Python.',
+            long_description = open("README.rst").read(),
             url = 'https://github.com/camillescott/shmlast',
             author = 'Camille Scott',
             author_email = 'camille.scott.w@gmail.com',
