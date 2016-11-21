@@ -27,27 +27,48 @@ dna_to_aa={'TTT':'F','TTC':'F', 'TTA':'L','TTG':'L',
 
 __complementTranslation = { "A": "T", "C": "G", "G": "C", "T": "A", "N": "N" }
 def complement(s):
-    """
-    Return complement of 's'.
-    """
+    ''' Get the base complement.
+
+    Args:
+        s (str): The sequence to complement.
+    '''
     c = "".join(__complementTranslation[n] for n in s)
     return c
 
 
 def reverse(s):
-    """
-    Return reverse of 's'.
-    """
+    '''Reverse the sequence.
+
+    Args:
+        s (str): Sequence to reverse.
+    '''
     r = "".join(reversed(s))
     return r
 
 
 def peptides(seq, start):
+    '''Translate the nucleotide sequence.
+
+    Args:
+        seq (str): The nucleotide sequence.
+        start (int): Translation start position.
+    Yields:
+        A sequence of amino acid identifiers for each codon.
+    '''
+
     for i in range(start, len(seq), 3):
         yield dna_to_aa.get(seq[i:i+3], "X")
 
 
 def translate(seq):
+    '''6-frame translation of the given nucleotide sequence.
+
+    Args:
+        seq (str): The nucleotide sequence.
+    Yields:
+        str: The translation in each frame.
+    '''
+
     for i in range(3):
         pep = peptides(seq, i)
         yield "".join(pep)
@@ -59,6 +80,13 @@ def translate(seq):
 
 
 def translate_fastx(input_fn, output_fn):
+    '''Translate a nucleotide FASTA file.
+
+    Args:
+        input_fn (str): The FASTA file to translate.
+        output_fn (str): Filename to store the results.
+    '''
+
     with open(output_fn, 'w') as fp:
         for record in screed.open(input_fn):
             for frame, t in enumerate(translate(record.sequence)):
@@ -69,6 +97,16 @@ def translate_fastx(input_fn, output_fn):
 @doit_task
 @profile_task
 def rename_task(input_fn, output_fn, name_map_fn='name_map.csv', prefix='tr'):
+    '''Rename the FASTA idenfiers to play nicely with various programs.
+
+    Args:
+        input_fn (str): The FASTA to rename.
+        output_fn (str): The filename of the renamed version.
+        name_map_fn (str): Where to store the mapping of old to new names.
+        prefix (str): Prefix to use for each transcript.
+    Returns:
+        dict: A doit task dictionary.
+    '''
     
     def rename_input():
         name_map = []
@@ -94,6 +132,14 @@ def rename_task(input_fn, output_fn, name_map_fn='name_map.csv', prefix='tr'):
 @doit_task
 @profile_task
 def translate_task(input_fn, output_fn): 
+    '''Translate a nucleotide FASTA in six frames.
+
+    Args:
+        input_fn (str): The nucleotide FASTA.
+        output_fn (str): Destination translated FASTA.
+    Returns:
+        dict: A doit task dictionary.
+    '''
 
     return {'name': 'translate:{0}'.format(input_fn),
             'title': title,

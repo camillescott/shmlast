@@ -126,6 +126,13 @@ def next_or_raise(fp):
 class MafParser(object):
 
     def __init__(self, filename, aln_strings=False, chunksize=10000, **kwargs):
+        '''Parser for LAST's MAF output.
+
+        Args:
+            filename (str): The MAF file.
+            aln_strings (bool): If True, parse the alignment strings as well.
+            chunksize (int): Size of chunks to parse.
+        '''
         self.chunksize = chunksize
         self.filename = filename
         self.aln_strings = aln_strings

@@ -10,11 +10,12 @@ aligner and the pydata stack to achieve much better performance while staying in
 
 ## About
 
-As described in the original publication ([Aubry et al.
-2014](http://www.plosgenetics.org/article/info%3Adoi%2F10.1371%2Fjournal.pgen.1004365)), conditional
-reciprocal best hits (CRBH) builds on the traditional reciprocal best hits (RBH) method for orthology
+Conditional Reciprocal Best Hits (CRBH) was originalyl described by [Aubry et al.
+2014](http://www.plosgenetics.org/article/info%3Adoi%2F10.1371%2Fjournal.pgen.1004365) and
+implemented in the [crb-blast](https://github.com/cboursnell/crb-blast) package. CRBH  builds 
+on the traditional Reciprocal Best Hits (RBH) method for orthology
 assignment by training a simple model of the e-value cutoff for a particular length of sequence on
-an initial set of RBH's. From their github:
+an initial set of RBH's. From its github repository:
 
     "Reciprocal best BLAST is a very conservative way to assign orthologs. The main innovation in
     CRB-BLAST is to learn an appropriate e-value cutoff to apply to each pairwise alignment by taking
@@ -25,15 +26,39 @@ an initial set of RBH's. From their github:
 Unfortunately, the original implementation uses NCBI BLAST+ (which is incredibly slow), and is
 implemented in Ruby, which requires users to leave the Python-dominated bioinformatics software
 system. shmlast makes this algorithm available to users in Python-land, while also greatly improving
-performance by using LAST for initial homology searches. Additionally, shmlast outputs both the raw
+performance by using [LAST](http://last.cbrc.jp/) for initial homology searches. Additionally, shmlast outputs both the raw
 parameters and a plot of its model for inspection.
 
-shmlast is designed for finding orthologs between *transcriptomes and protein databases*. As such, it currently does not
+shmlast is designed for finding orthologs between *transcriptomes* and *protein databases*. As such, it currently does not
 support nucleotide-nucleotide or protein-protein alignments. This may be changed in a future version, but for now, 
 it remains focused on that task.
 
 Also note that RBH, and by extension CRBH, is meant for comparing between *two species*. Neither of these methods should
 be used for annotating a transcriptome with a mixed protein database (like, for example, uniref90).
+
+## Usage
+
+For some transcriptome `transcripts.fa` and some protein database `pep.faa`, the basic usage is:
+
+```bash
+shmlast crbl -q transcripts.fa -d pep.faa 
+```
+
+shmlast can be distributed across multiple cores using the `--n_threads` option.
+
+```bash
+shmlast crbl -q transcripts.fa -d pep.faa --n_threads 8
+```
+
+shmlast can also distribute across nodes with the `--pbs` option. This will use the file
+specified by the `$PBS_NODEFILE` environment variable; all listed nodes and cpus will be maximally utilized.
+
+Another use case is to perform simple Reciprocal Best Hits; this can be done with the `rbl`
+subcommand. The maximum expectation-value can also be specified with `-e`.
+
+```bash
+shmlast rbl -q transcripts.fa -d pep.faa --e 0.000001
+```
 
 ## Output
 
@@ -49,7 +74,7 @@ crbl_df = pd.read_csv('query.x.database.crbl.csv')
 The columns are:
 
 1. *E*: The e-value.
-2. *EG2*: Expected alignments per square giga.
+2. *EG2*: Expected alignments per square gigabase.
 3. *E_scaled*: E-value rescaled for the model (see below for details).
 4. *ID*: A unique ID for the alignment.
 5. *bitscore*: The bitscore, calculated as (lambda * score - ln[K]) / ln[2].
@@ -81,7 +106,7 @@ shmlast also outputs its model, both in CSV format and as a plot. The CSV file i
 
 To fit the model, the e-values are first scaled to a more suitable range using the equation
 `Es = -log10(E)`, where `Es` is the scaled e-value. e-values of 0 are set to an arbitrarily small
-value to allow the log-scaling. The *fit* column of the model is thus this scaled value.
+value to allow for log-scaling. The *fit* column of the model is this scaled value.
 
 The model plot is named `$QUERY.x.$DATABASE.crbl.model.plot.pdf` by default.
 
@@ -128,7 +153,7 @@ through the package manager:
 
 `sudo apt-get install last-align parallel`
 
-For OSX, you can get last through the homebrew-science channel:
+For OSX, you can get LAST through the homebrew-science channel:
 
 ```bash
 brew tap homebrew/science
@@ -139,7 +164,7 @@ brew install last
 
 shmlast is also a Python library. Each component of the pipeline is implemented as a
 [pydoit](http://pydoit.org) task and can be used in doit workflows, and the implementations for calculating best hits,
-reciprocal best hits, and conditional reciprocal best hits are relatively easily usable as Python
+reciprocal best hits, and conditional reciprocal best hits are usable as Python
 classes. For example, the `lastal` task could be incorporated into a doit file like so:
 
 ```Python
