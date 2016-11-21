@@ -11,3 +11,6 @@ def task_install():
 
 def task_test():
     return {'actions': [setupcmd(['test'])]}
+
+def task_publish():
+    return {'actions': [setupcmd(['sdist', 'upload'])]}
