@@ -23,7 +23,8 @@ SCRIPTS=glob('bin/*')
 def main():
     setup(  name = 'shmlast',
             version = __version__,
-            description = 'reciprocal and conditional reciprocal best LAST',
+            description = 'An improved implementation of Conditional Reciprocal'\
+                          ' Best Hits with LAST and Python.',
             url = 'https://github.com/camillescott/shmlast',
             author = 'Camille Scott',
             author_email = 'camille.scott.w@gmail.com',

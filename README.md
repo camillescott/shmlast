@@ -1,4 +1,5 @@
 # shmlast
+### *An improved implementation of Conditional Reciprocal Best Hits with LAST and Python*
 
 [![Build Status](https://travis-ci.org/camillescott/shmlast.svg?branch=master)](https://travis-ci.org/camillescott/shmlast)
 [![codecov](https://codecov.io/gh/camillescott/shmlast/branch/master/graph/badge.svg)](https://codecov.io/gh/camillescott/shmlast)
