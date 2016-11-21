@@ -37,7 +37,7 @@ def main():
                              'codecov'],
             install_requires = ['doit>=0.29.0',
                                 'ficus>=0.3.2',
-                                'matplotlib>=1.4',
+                                'matplotlib==1.5.1',
                                 'numpy>=1.9.0',
                                 'pandas>=0.17.0',
                                 'scipy>=0.16.0',
