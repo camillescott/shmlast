@@ -75,7 +75,7 @@ def lastdb_task(db_fn, db_out_prefix=None, prot=True,
 @profile_task
 def lastal_task(query, db, out_fn, translate=False,
                 frameshift=LASTAL_CFG['frameshift'], cutoff=0.00001, 
-                n_threads=1, pbs=False, params=None):
+                n_threads=1, pbs=None, params=None):
     '''Create a pydoit task to run lastal
 
     Args:

@@ -101,13 +101,13 @@ def which(program, raise_err=True):
         return None
 
 
-def parallel_fasta(input_filename, output_filename, command, n_jobs, pbs=False):
+def parallel_fasta(input_filename, output_filename, command, n_jobs, pbs=None):
 
     exc = which('parallel')
-    cmd = ['cat', input_filename, '|', exc, '--round-robin', '--pipe', '-L', 2, '-N', 2000,
-           '--gnu']
-    if pbs:
-        cmd.extend(['--sshloginfile $PBS_NODEFILE', '--workdir $PWD', '-j', 1])
+    cmd = ['cat', input_filename, '|', exc, '--round-robin', '--pipe', '-L', 2,
+           '-N', 10000, '--gnu']
+    if pbs is not None:
+        cmd.extend(['--sshloginfile', pbs, '--workdir $PWD'])
     else:
         cmd.extend(['-j', n_jobs])
     cmd.extend(['-a', input_filename])

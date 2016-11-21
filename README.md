@@ -50,8 +50,26 @@ shmlast can be distributed across multiple cores using the `--n_threads` option.
 shmlast crbl -q transcripts.fa -d pep.faa --n_threads 8
 ```
 
-shmlast can also distribute across nodes with the `--pbs` option. This will use the file
-specified by the `$PBS_NODEFILE` environment variable; all listed nodes and cpus will be maximally utilized.
+shmlast can also distribute across nodes with the `--sshnodefile` flag. This should be a list of nodes
+in `$NUM_CPUS/$SSH_ADDRESS` format. For example, a configuration where two nodes are available, one
+with 4 and the other with 12 cpus available, might look like so:
+
+```
+4/csm-010
+12/ifi-002
+```
+
+With Portable Batch System (PBS), this information is stored in the `$PBS_NODEFILE` variable, though the format
+varies per machine. Often times a list will be returned without the number of cores per node but instead with one
+entry per node; this can be converted to the proper format and then used with:
+
+```bash
+sort $PBS_NODEFILE | uniq -c | awk '{print $1"/"$2}' > nodefile.txt
+shmlast crbl -q transcripts.fa -d pep.faa --sshloginfile nodefile.txt
+```
+
+It will be up to you to figure out how your local cluster formats its node-file, as it varies greatly. Unfortunately, there
+isn't a reliable way to determine this programmatically.
 
 Another use case is to perform simple Reciprocal Best Hits; this can be done with the `rbl`
 subcommand. The maximum expectation-value can also be specified with `-e`.

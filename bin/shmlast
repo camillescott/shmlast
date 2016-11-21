@@ -75,9 +75,8 @@ def main():
                        help='If True, record CPU time.')
         p.add_argument('--profile-output', default=None,
                        help='Filename for profile results.')
-        p.add_argument('--pbs', action='store_true', default=False,
-                       help='Distribute execution across nodes '\
-                       'specified in $PBS_NODEFILE variabe.')
+        p.add_argument('--sshloginfile', dest='pbs',  default=None,
+                       help='Distribute execution across the specified nodes.')
 
         return p
 

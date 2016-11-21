@@ -55,7 +55,7 @@ class ShmlastApp(TaskLoader):
 class RBL(ShmlastApp):
 
     def __init__(self, query_fn, database_fn, output_fn=None,
-                 cutoff=.00001, n_threads=1, pbs=False, directory=None):
+                 cutoff=.00001, n_threads=1, pbs=None, directory=None):
         '''Generate and manage the pydoit tasks for the RBL pipeline.
 
         Args:
@@ -183,7 +183,7 @@ class RBL(ShmlastApp):
 class CRBL(RBL):
 
     def __init__(self, query_fn, database_fn, output_fn=None,
-                 model_fn=None, cutoff=.00001, n_threads=1, pbs=False):
+                 model_fn=None, cutoff=.00001, n_threads=1, pbs=None):
         '''Generate and manage the pydoit tasks for the CRBL pipeline.
 
         Args:
