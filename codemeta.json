@@ -1,0 +1,23 @@
+{
+  "@context": "https://raw.githubusercontent.com/mbjones/codemeta/master/codemeta.jsonld",
+  "@type": "Code",
+  "author": [
+    {
+      "@id": "http://orcid.org/0000-0001-8822-8779",
+      "@type": "Person",
+      "email": "camille.scott.w@gmail.com",
+      "name": "Camille Scott",
+      "affiliation": "University of California, Davis"
+    }
+  ],
+  "identifier": "",
+  "codeRepository": "https://github.com/camillescott/shmlast",
+  "datePublished": "2016-11-21",
+  "dateModified": "2016-11-21",
+  "dateCreated": "2016-11-21",
+  "description": "An improved implementation of Conditional Reciprocal Best Hits with LAST and Python.",
+  "keywords": "bioinformatics, orthology, alignment, LAST, BLAST, python",
+  "license": "BSD-3-Clause",
+  "title": "shmlast",
+  "version": "v1.0.0"
+}
