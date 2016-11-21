@@ -191,6 +191,7 @@ def plot_crbh_fit(model_df, hits_df, model_plot_fn, show=False,
 
         ax.set_xlim(model_df['center'].min(), model_df['center'].max())
         ax.set_ylim(0, max(model_df['fit'].max(), hits_df[scaled_col].max()) + 50)
-        ax.set_title('CRBL Fit')
+        ax.set_ylabel('Score ({0})'.format(feature_col))
+        ax.set_xlabel('Alignment Length')
 
 
