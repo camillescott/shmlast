@@ -29,7 +29,7 @@ class ShmlastApp(TaskLoader):
             mkdir(self.directory)
         except OSError:
             pass
-        self.doit_config = {}
+        self.doit_config = {'verbosity': 2}
         if config is not None:
             self.doit_config.update(config)
 

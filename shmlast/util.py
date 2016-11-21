@@ -104,10 +104,14 @@ def which(program, raise_err=True):
 def parallel_fasta(input_filename, output_filename, command, n_jobs, pbs=False):
 
     exc = which('parallel')
-    cmd = ['cat', input_filename, '|', exc, '--progress', '--pipe', '-L', 2, '-N', 400,
-           '--gnu', '-j', n_jobs, '-a', input_filename]
+    cmd = ['cat', input_filename, '|', exc, '--round-robin', '--pipe', '-L', 2, '-N', 2000,
+           '--gnu']
     if pbs:
-        cmd.extend(['--sshloginfile $PBS_NODEFILE', '--workdir $PWD'])
+        cmd.extend(['--sshloginfile $PBS_NODEFILE', '--workdir $PWD', '-j', 1])
+    else:
+        cmd.extend(['-j', n_jobs])
+    cmd.extend(['-a', input_filename])
+
     if isinstance(command, list):
         command = ' '.join(command)
     cmd.extend([command, '>', output_filename])
