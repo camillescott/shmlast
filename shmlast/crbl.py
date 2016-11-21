@@ -13,6 +13,15 @@ from .hits import BestHits
 from .last import MafParser
 
 def get_reciprocal_best_last_translated(query_maf, database_maf):
+    '''Perform Reciprocal Best Hits between the given MAF files.
+
+    Args:
+        query_maf (str): The query MAF file.
+        database_maf (str): The translated datbase MAF file.
+    Returns:
+        tuple: DataFrames with the RBH's, query vs database, and database vs
+            query hits.
+    '''
     bh = BestHits(comparison_cols=['E', 'EG2'])
     qvd_df = MafParser(query_maf).read()
     qvd_df[['qg_name', 'q_frame']] = qvd_df.q_name.str.partition('_')[[0,2]]
@@ -32,6 +41,15 @@ def get_reciprocal_best_last_translated(query_maf, database_maf):
 
 
 def backmap_names(results_df, q_names, d_names):
+    '''Map names from translated RBH's to original query and database names.
+
+    Args:
+        results_df (pandas.DataFrame): The results to backmap.
+        q_names (pandas.DataFrame): Query name map.
+        d_names (pandas.DataFrame): Database name map.
+    Returns:
+        pandas.DataFrame: Reference to results_df.
+    '''
 
     results_df = pd.merge(results_df, 
                           q_names, 
@@ -53,6 +71,17 @@ def backmap_names(results_df, q_names, d_names):
 
 
 def scale_evalues(df, name='E', inplace=False):
+    '''Log scale the evalue column specified by name.
+
+    Args:
+        df (pandas.DataFrame): The data.
+        name (str): Column name with the evalues.
+        inplace (bool): Perform the scaling inplace.
+    Returns:
+        tuple: The scaled DataFrame and the new column name of the scaled
+            values.
+    '''
+
     scaled_col_name = name + '_scaled'
     if inplace is False:
         df = df.copy()
@@ -63,6 +92,15 @@ def scale_evalues(df, name='E', inplace=False):
 
 
 def fit_crbh_model(rbh_df, length_col='s_aln_len', feature_col='E'):
+    '''Build the CRBH model on the given RBH's.
+
+    Args:
+        rbh_df (pandas.DataFrame): DataFrame with RBH's.
+        length_col (str): The column with the subject lengths.
+        feature_col (str): Score column to train on.
+    Returns:
+        pandas.DataFrame: The model.
+    '''
 
     data = rbh_df[[length_col, feature_col]].rename(columns={length_col:'length'})
     data.sort_values('length', inplace=True)
@@ -91,6 +129,18 @@ def fit_crbh_model(rbh_df, length_col='s_aln_len', feature_col='E'):
 
 def filter_hits_from_model(model_df, rbh_df, hits_df, feature_col='E',
                            id_col='ID', length_col='s_aln_len'):
+    '''Filter a DataFrame of LAST best hits using the CRBH model.
+
+    Args:
+        model_df (pandas.DataFrame): The CRBH model.
+        rbh_df (pandas.DataFrame): The RBH's.
+        hits_df (pandas.DataFrame): The query vs database hits.
+        feature_col (str): Column name of scores.
+        id_col (str): Column with unique ID of hits.
+        length_col (str): Column name to use for length.
+    Returns:
+        pandas.DataFrame: The CRBH's.
+    '''
 
     hits_df, _ = scale_evalues(hits_df, name=feature_col, inplace=False)
     rbh_df, scaled_feature_col = scale_evalues(rbh_df, name=feature_col, inplace=False)

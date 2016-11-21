@@ -56,6 +56,18 @@ class RBL(ShmlastApp):
 
     def __init__(self, query_fn, database_fn, output_fn=None,
                  cutoff=.00001, n_threads=1, pbs=False, directory=None):
+        '''Generate and manage the pydoit tasks for the RBL pipeline.
+
+        Args:
+            query_fn (str): The query filename.
+            database_fn (str): The database filename.
+            output_fn (str): Filename to store results in.
+            cutoff (float): The score cutoff.
+            n_threads (int): Number of threads to run on.
+            pbs (bool): Whether to generate parallel command for PBS
+                environment.
+            directory (str): The directory to run tasks in.
+        '''
 
         self.query_fn = query_fn
         self.renamed_query_fn = hidden_fn(path.basename(self.query_fn))
@@ -156,6 +168,8 @@ class RBL(ShmlastApp):
 
 
     def tasks(self):
+        '''Iterator over all tasks in pipeline.
+        '''
         yield self.rename_transcriptome_task()
         yield self.rename_database_task()
         yield self.translate_task()
@@ -170,7 +184,19 @@ class CRBL(RBL):
 
     def __init__(self, query_fn, database_fn, output_fn=None,
                  model_fn=None, cutoff=.00001, n_threads=1, pbs=False):
+        '''Generate and manage the pydoit tasks for the CRBL pipeline.
 
+        Args:
+            query_fn (str): The query filename.
+            database_fn (str): The database filename.
+            output_fn (str): Filename to store results in.
+            model_fn (str): Filename to store the model in.
+            cutoff (float): The score cutoff.
+            n_threads (int): Number of threads to run on.
+            pbs (bool): Whether to generate parallel command for PBS
+                environment.
+            directory (str): The directory to run tasks in.
+        '''
         prefix = '{q}.x.{d}.crbl'.format(q=path.basename(query_fn),
                                          d=path.basename(database_fn))
 
@@ -231,6 +257,8 @@ class CRBL(RBL):
         return td
 
     def tasks(self):
+        '''Iterator over all pipeline tasks.
+        '''
         for tsk in super(CRBL, self).tasks():
             if tsk.name != 'reciprocal_best_last':
                 yield tsk
