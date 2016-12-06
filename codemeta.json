@@ -19,5 +19,5 @@
   "keywords": "bioinformatics, orthology, alignment, LAST, BLAST, python",
   "license": "BSD-3-Clause",
   "title": "shmlast",
-  "version": "v1.0.2"
+  "version": "v1.0.3"
 }

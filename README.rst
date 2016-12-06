@@ -2,7 +2,7 @@ shmlast
 =======
 
 *An improved implementation of Conditional Reciprocal Best Hits with LAST and Python*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------------------------------------------------------------
 
 |Build Status| |codecov|
 
@@ -140,7 +140,7 @@ See http://last.cbrc.jp/doc/last-evalues.html for more information on
 e-values and scores.
 
 Model Output
-^^^^^^^^^^^^
+~~~~~~~~~~~~
 
 shmlast also outputs its model, both in CSV format and as a plot. The
 CSV file is named ``$QUERY.x.$DATABASE.crbl.model.csv``, and has the
