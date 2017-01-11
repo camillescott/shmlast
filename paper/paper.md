@@ -66,8 +66,8 @@ specificity of RBH.
 shmlast benefits immensely from the use of LAST over BLAST. It scales well by using gnu-parallel,
 and can be distributed across clusters for particularly large runs.
 
-![Performance comparison with [*Schizosaccharomyces pombe*](ftp://ftp.ebi.ac.uk/pub/databases/pombase/FASTA/cdna_nointrons_utrs.fa.gz) as the query transcriptome and
-[Nematostella vectensis](ftp://ftp.ebi.ac.uk/pub/databases/reference_proteomes/QfO/Eukaryota/UP000001593_45351.fasta.gz) as the target proteome.](../perf/results.pdf)
+![Performance comparison with [*Schizosaccharomyces pombe*](ftp://ftp.ebi.ac.uk/pub/databases/pombase/FASTA/cdna_nointrons_utrs.fa.gz) [@wood_pombase:_2012] as the query transcriptome and
+[*Nematostella vectensis*](ftp://ftp.ebi.ac.uk/pub/databases/reference_proteomes/QfO/Eukaryota/UP000001593_45351.fasta.gz) [@apweiler_protein_2004] as the target proteome.](../perf/results.pdf)
 
 
 
