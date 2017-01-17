@@ -2,9 +2,9 @@ shmlast
 =======
 
 *An improved implementation of Conditional Reciprocal Best Hits with LAST and Python*
--------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-|Build Status| |codecov|
+|Build Status| |codecov| |JOSS|
 
 shmlast is a reimplementation of the `Conditional Reciprocal Best
 Hits <https://github.com/cboursnell/crb-blast>`__ algorithm for finding
@@ -140,7 +140,7 @@ See http://last.cbrc.jp/doc/last-evalues.html for more information on
 e-values and scores.
 
 Model Output
-~~~~~~~~~~~~
+^^^^^^^^^^^^
 
 shmlast also outputs its model, both in CSV format and as a plot. The
 CSV file is named ``$QUERY.x.$DATABASE.crbl.model.csv``, and has the
@@ -238,6 +238,11 @@ There is an incompatibility between seaborn and matplotlib version
 1.5.3. For that reason, the required matplotlib version is locked to
 1.5.1.
 
+Contributing
+------------
+
+See `CONTRIBUTING.md <CONTRIBUTING.md>`__ for guidelines.
+
 References
 ----------
 
@@ -258,3 +263,5 @@ References
    :target: https://travis-ci.org/camillescott/shmlast
 .. |codecov| image:: https://codecov.io/gh/camillescott/shmlast/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/camillescott/shmlast
+.. |JOSS| image:: http://joss.theoj.org/papers/3cde54de7dfbcada7c0fc04f569b36c7/status.svg
+   :target: http://joss.theoj.org/papers/3cde54de7dfbcada7c0fc04f569b36c7
