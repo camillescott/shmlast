@@ -1,4 +1,4 @@
-Please see the [contribution guidelines](CONTRIBUTING.md) for details on submitting an issue.
+Please see the CONTRIBUTING.md for details on submitting an issue.
 
 ## Problem Description
 
