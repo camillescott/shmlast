@@ -4,6 +4,7 @@
 [![Build Status](https://travis-ci.org/camillescott/shmlast.svg?branch=master)](https://travis-ci.org/camillescott/shmlast)
 [![codecov](https://codecov.io/gh/camillescott/shmlast/branch/master/graph/badge.svg)](https://codecov.io/gh/camillescott/shmlast)
 [![JOSS](http://joss.theoj.org/papers/3cde54de7dfbcada7c0fc04f569b36c7/status.svg)](http://joss.theoj.org/papers/3cde54de7dfbcada7c0fc04f569b36c7)
+[![DOI](https://zenodo.org/badge/55653298.svg)](https://zenodo.org/badge/latestdoi/55653298)
 
 shmlast is a reimplementation of the [Conditional Reciprocal Best
 Hits](https://github.com/cboursnell/crb-blast) algorithm for finding potential orthologs between

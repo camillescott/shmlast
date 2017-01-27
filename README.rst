@@ -4,7 +4,7 @@ shmlast
 *An improved implementation of Conditional Reciprocal Best Hits with LAST and Python*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-|Build Status| |codecov| |JOSS|
+|Build Status| |codecov| |JOSS| |DOI|
 
 shmlast is a reimplementation of the `Conditional Reciprocal Best
 Hits <https://github.com/cboursnell/crb-blast>`__ algorithm for finding
@@ -265,3 +265,5 @@ References
    :target: https://codecov.io/gh/camillescott/shmlast
 .. |JOSS| image:: http://joss.theoj.org/papers/3cde54de7dfbcada7c0fc04f569b36c7/status.svg
    :target: http://joss.theoj.org/papers/3cde54de7dfbcada7c0fc04f569b36c7
+.. |DOI| image:: https://zenodo.org/badge/55653298.svg
+   :target: https://zenodo.org/badge/latestdoi/55653298
