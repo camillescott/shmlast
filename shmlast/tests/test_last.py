@@ -140,3 +140,4 @@ def test_lastal_task_uptodate(tmpdir, datadir):
         print(aln_task)
         status = check_status(aln_task, tasks=[aln_task, db_task])
         assert status.status == 'up-to-date'
+

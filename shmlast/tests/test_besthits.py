@@ -3,6 +3,7 @@ import pandas as pd
 
 from shmlast.tests.utils import datadir
 from shmlast.hits import BestHits
+from shmlast.crbl import scale_evalues
 
 
 def check_df_equals(dfA, dfB, col='E'):
@@ -51,3 +52,10 @@ def test_reciprocal_best_hits(datadir):
     results_df = bh.reciprocal_best_hits(query_df, db_df, inplace=False)
     
     assert check_df_equals(results_df, expected_df)
+
+def test_scale_evalues():
+    test_df = pd.DataFrame({'E': [.1, 0.01, 0.0]})
+    expected_df = pd.DataFrame({'E_scaled': [1.0, 2.0, 307.652655568]})
+    result_df, col_name = scale_evalues(test_df)
+
+    assert list(result_df[col_name]) == pytest.approx(expected_df['E_scaled'])

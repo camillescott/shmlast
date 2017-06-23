@@ -226,13 +226,13 @@ class CRBL(RBL):
         def do_crbl_fit_and_filter():
             rbh_df, hits_df, _ = get_reciprocal_best_last_translated(self.query_x_db_fn,
                                                                      self.db_x_query_fn)
-            
             model_df = fit_crbh_model(rbh_df)
             model_df.to_csv(self.model_fn, index=False)
             model_df = pd.read_csv(self.model_fn)
 
             filtered_df = filter_hits_from_model(model_df, rbh_df, hits_df)
             results = pd.concat([rbh_df, filtered_df], axis=0)
+            results, scaled_col = scale_evalues(results, inplace=True)
             del results['translated_q_name']
 
             q_names = pd.read_csv(self.query_name_map_fn)

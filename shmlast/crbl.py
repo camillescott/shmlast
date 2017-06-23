@@ -12,6 +12,9 @@ import seaborn as sns
 from .hits import BestHits
 from .last import MafParser
 
+float_info = np.finfo(float)
+
+
 def get_reciprocal_best_last_translated(query_maf, database_maf):
     '''Perform Reciprocal Best Hits between the given MAF files.
 
@@ -81,13 +84,14 @@ def scale_evalues(df, name='E', inplace=False):
         tuple: The scaled DataFrame and the new column name of the scaled
             values.
     '''
-
+    
     scaled_col_name = name + '_scaled'
     if inplace is False:
         df = df.copy()
     df[scaled_col_name] = df[name]
-    df.loc[df[scaled_col_name] == 0.0, scaled_col_name] = 1e-300
+    df.loc[df[scaled_col_name] == 0.0, scaled_col_name] = float_info.tiny
     df[scaled_col_name] = -np.log10(df[scaled_col_name])
+    
     return df, scaled_col_name
 
 
@@ -161,37 +165,31 @@ def filter_hits_from_model(model_df, rbh_df, hits_df, feature_col='E',
 
 
 def plot_crbh_fit(model_df, hits_df, model_plot_fn, show=False,
-                  figsize=(10,10), feature_col='E', length_col='s_aln_len'):
+                  figsize=(10,10), feature_col='E', length_col='s_aln_len',
+                  **fig_kwds):
 
     plt.style.use('seaborn-ticks')
 
     with FigureManager(model_plot_fn, show=show, 
-                       figsize=figsize) as (fig, ax):
+                       figsize=figsize, **fig_kwds) as (fig, ax):
 
-        scatter_kws = {'s': 10, 'alpha':0.7}
-        scatter_kws['c'] = sns.xkcd_rgb['ruby']
-        scatter_kws['marker'] = 'o'
-        line_kws = {'c': sns.xkcd_rgb['red wine'], 
-                    'label':'Query Hits Regression'}
         sample_size = min(len(hits_df), 5000)
         hits_df, scaled_col = scale_evalues(hits_df, name=feature_col,
                                             inplace=False)
-        sns.regplot(length_col, scaled_col, hits_df.sample(sample_size), order=1, 
-                    label='Query Hits', scatter_kws=scatter_kws, 
-                    line_kws=line_kws, color=scatter_kws['c'], ax=ax)
 
-        scatter_kws['c'] = sns.xkcd_rgb['twilight blue']
-        scatter_kws['marker'] = 's'
-        sns.regplot('center', 'fit', model_df, 
-                    fit_reg=False, x_jitter=True, y_jitter=True, ax=ax,
-                    label='CRBL Fit', scatter_kws=scatter_kws, line_kws=line_kws)
+        ax.scatter(hits_df[length_col], hits_df[scaled_col], s=10, alpha=0.7, 
+                   c=sns.xkcd_rgb['ruby'], marker='o', label='Query Hits')
+
+        ax.scatter(model_df['center'], model_df['fit'], label='CRBL Fit',
+                   c=sns.xkcd_rgb['twilight blue'], marker='o', s=5, alpha=0.7)
 
         leg = ax.legend(fontsize='medium', scatterpoints=3, frameon=True)
         leg.get_frame().set_linewidth(1.0)
 
         ax.set_xlim(model_df['center'].min(), model_df['center'].max())
         ax.set_ylim(0, max(model_df['fit'].max(), hits_df[scaled_col].max()) + 50)
-        ax.set_ylabel('Score ({0})'.format(feature_col))
+        ax.set_ylabel('Score ($E_{scaled}$)' if scaled_col == 'E_scaled'\
+                      else 'Score ({0})'.format(scaled_col))
         ax.set_xlabel('Alignment Length')
 
 

@@ -12,8 +12,11 @@ from .profile import profile_task
 from .util import create_doit_task as doit_task
 from .util import which, parallel_fasta, title
 
+float_info = np.finfo(float)
+
 LASTAL_CFG = { "params": [],
                "frameshift": 15 }
+
 LASTDB_CFG = { "params": ["-w3"] }
 
 def clean_lastdb(db_prefix):
@@ -227,6 +230,7 @@ class MafParser(object):
         setattr(df, 'LAMBDA', self.LAMBDA)
         setattr(df, 'K', self.K)
         df['bitscore'] = (self.LAMBDA * df['score'] - np.log(self.K)) / np.log(2)
-
+        # Sometimes lastal spits out e-values less than zero...
+        df.loc[df['E'] < 0, 'E'] = float_info.tiny
         return df
 

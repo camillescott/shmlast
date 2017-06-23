@@ -16,6 +16,7 @@ shmlast/tests/__pycache__
 build/
 dist/
 shmlast.egg-info
+perf/
 
 .ipynb_checkpoints/
 
