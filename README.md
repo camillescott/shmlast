@@ -199,8 +199,7 @@ def task_lastal():
 
 ## Known Issues
 
-There is an incompatibility between seaborn and matplotlib version 1.5.3. For that reason, the
-required matplotlib version is locked to 1.5.1.
+There is currently an issue with IUPAC codes in RNA. This will be fixed soon.
 
 ## Contributing
 

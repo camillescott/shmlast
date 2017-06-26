@@ -205,7 +205,9 @@ Through a Package Manager
 For Ubuntu 16.04 or newer, sufficiently new versions of both are
 available through the package manager:
 
-``sudo apt-get install last-align parallel``
+.. code:: bash
+
+    sudo apt-get install last-align parallel
 
 For OSX, you can get LAST through the homebrew-science channel:
 
@@ -234,9 +236,8 @@ into a doit file like so:
 Known Issues
 ------------
 
-There is an incompatibility between seaborn and matplotlib version
-1.5.3. For that reason, the required matplotlib version is locked to
-1.5.1.
+There is currently an issue with IUPAC codes in RNA. This will be fixed
+soon.
 
 Contributing
 ------------
