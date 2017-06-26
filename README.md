@@ -172,7 +172,9 @@ And a recent version of gnu-parallel can be installed like so:
 For Ubuntu 16.04 or newer, sufficiently new versions of both are available
 through the package manager:
 
-`sudo apt-get install last-align parallel`
+```bash
+sudo apt-get install last-align parallel
+```
 
 For OSX, you can get LAST through the homebrew-science channel:
 
