@@ -58,4 +58,5 @@ def test_scale_evalues():
     expected_df = pd.DataFrame({'E_scaled': [1.0, 2.0, 307.652655568]})
     result_df, col_name = scale_evalues(test_df)
 
-    assert list(result_df[col_name]) == pytest.approx(expected_df['E_scaled'])
+    assert list(result_df[col_name]) == \
+        pytest.approx(list(expected_df['E_scaled']))

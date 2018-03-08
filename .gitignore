@@ -22,3 +22,6 @@ perf/
 
 *.csv
 data/
+
+.pytest_cache
+.coverage
