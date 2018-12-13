@@ -32,7 +32,7 @@ def datadir(tmpdir, request):
     def getter(filename, as_str=True):
         filepath = tmpdir.join(filename)
         shutil.copyfile(os.path.join(data_dir, filename),
-                        filepath)
+                        str(filepath))
         if as_str:
             return str(filepath)
         return filepath
