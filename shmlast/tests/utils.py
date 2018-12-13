@@ -10,7 +10,6 @@ import traceback
 from distutils import dir_util
 from pytest import fixture
 
-
 from doit.cmd_base import TaskLoader
 from doit.doit_cmd import DoitMain
 from doit.dependency import Dependency, DbmDB
@@ -26,13 +25,14 @@ def datadir(tmpdir, request):
     Fixture responsible for locating the test data directory and copying it
     into a temporary directory.
     '''
-    filename = request.module.__file__
-    test_dir = os.path.dirname(filename)
-    data_dir = os.path.join(test_dir, 'data') 
-    dir_util.copy_tree(data_dir, str(tmpdir))
+    filename   = request.module.__file__
+    test_dir   = os.path.dirname(filename)
+    data_dir   = os.path.join(test_dir, 'data')
 
     def getter(filename, as_str=True):
         filepath = tmpdir.join(filename)
+        shutil.copyfile(os.path.join(data_dir, filename),
+                        filepath)
         if as_str:
             return str(filepath)
         return filepath

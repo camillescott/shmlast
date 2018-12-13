@@ -36,7 +36,7 @@ def main():
             tests_require = ['pytest',
                              'codecov'],
             install_requires = ['doit>=0.29.0',
-                                'ficus>=0.3.2',
+                                'ficus>=0.5',
                                 'matplotlib>=1.5.1',
                                 'numpy>=1.9.0',
                                 'pandas>=0.17.0',

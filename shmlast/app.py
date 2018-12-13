@@ -9,9 +9,9 @@ import pandas as pd
 from .crbl import (get_reciprocal_best_last_translated, backmap_names,
                    scale_evalues, fit_crbh_model, filter_hits_from_model,
                    plot_crbh_fit)
-
+from .last import lastdb_task, lastal_task
+from .maf import MafParser
 from .profile import StartProfiler, profile_task
-from .last import lastdb_task, lastal_task, MafParser
 from .translate import translate_task, rename_task
 from .util import ShortenedPythonAction, title, hidden_fn
 from .util import create_doit_task as doit_task
@@ -228,10 +228,10 @@ class CRBL(RBL):
                                                                      self.db_x_query_fn)
             model_df = fit_crbh_model(rbh_df)
             model_df.to_csv(self.model_fn, index=False)
-            model_df = pd.read_csv(self.model_fn)
+            #model_df = pd.read_csv(self.model_fn)
 
             filtered_df = filter_hits_from_model(model_df, rbh_df, hits_df)
-            results = pd.concat([rbh_df, filtered_df], axis=0)
+            results = pd.concat([rbh_df, filtered_df], axis=0, sort=True)
             results, scaled_col = scale_evalues(results, inplace=True)
             del results['translated_q_name']
 

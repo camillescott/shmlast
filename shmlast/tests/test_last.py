@@ -10,7 +10,7 @@ import sys
 from shmlast.tests.utils import datadir, run_task, run_tasks, check_status, touch
 from shmlast.last import lastal_task
 from shmlast.last import lastdb_task
-from shmlast.last import MafParser
+from shmlast.maf import MafParser
 
 LASTDB_EXTENSIONS = ['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis']
 

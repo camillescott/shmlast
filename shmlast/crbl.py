@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 
 from .hits import BestHits
-from .last import MafParser
+from .maf import MafParser
 
 float_info = np.finfo(float)
 
@@ -27,14 +27,21 @@ def get_reciprocal_best_last_translated(query_maf, database_maf):
     '''
     bh = BestHits(comparison_cols=['E', 'EG2'])
     qvd_df = MafParser(query_maf).read()
-    qvd_df[['qg_name', 'q_frame']] = qvd_df.q_name.str.partition('_')[[0,2]]
+    try:
+        qvd_df[['qg_name', 'q_frame']] = qvd_df.q_name.str.partition('_')[[0,2]]
+    except KeyError:
+        # could have been empty
+        qvd_df = qvd_df.assign(qg_name=[], q_frame=[])
     qvd_df.rename(columns={'q_name': 'translated_q_name',
                            'qg_name': 'q_name'},
                   inplace=True)
     qvd_df['ID'] = qvd_df.index
 
     dvq_df = MafParser(database_maf).read()
-    dvq_df[['sg_name', 'frame']] = dvq_df.s_name.str.partition('_')[[0,2]]
+    try:
+        dvq_df[['sg_name', 'frame']] = dvq_df.s_name.str.partition('_')[[0,2]]
+    except KeyError:
+        dvq_df = dvq_df.assign(sg_name=[], frame=[])
     dvq_df.rename(columns={'s_name': 'translated_s_name',
                            'sg_name': 's_name'},
                   inplace=True)
@@ -111,8 +118,9 @@ def fit_crbh_model(rbh_df, length_col='s_aln_len', feature_col='E'):
     _, feature_col = scale_evalues(data, name=feature_col, inplace=True)
 
     # create a DataFrame for the model, staring with the alignment lengths
-    fit = pd.DataFrame(np.arange(10, data['length'].max()), 
-                       columns=['center'], dtype=int)
+    stop = data['length'].max()
+    fit = pd.DataFrame(np.arange(10, stop if not np.isnan(stop) else 11), 
+                       columns=['center'], dtype=np.int64)
     
     # create the bins
     fit['size'] = fit['center'] * 0.1
@@ -125,6 +133,7 @@ def fit_crbh_model(rbh_df, length_col='s_aln_len', feature_col='E'):
     def bin_mean(fit_row, df):
         hits = df[(df['length'] >= fit_row.left) & (df['length'] <= fit_row.right)]
         return hits[feature_col].mean()
+
     fit['fit'] = fit.apply(bin_mean, args=(data,), axis=1)
     model_df = fit.dropna()
 
@@ -150,6 +159,7 @@ def filter_hits_from_model(model_df, rbh_df, hits_df, feature_col='E',
     rbh_df, scaled_feature_col = scale_evalues(rbh_df, name=feature_col, inplace=False)
 
     # Merge the model into the subset of the hits which aren't in RBH
+    print(hits_df[length_col].dtype, model_df['center'].dtype)
     comp_df = pd.merge(hits_df[hits_df[id_col].isin(rbh_df[id_col]) == False], 
                        model_df, left_on=length_col, right_on='center')
 
@@ -172,6 +182,9 @@ def plot_crbh_fit(model_df, hits_df, model_plot_fn, show=False,
 
     with FigureManager(model_plot_fn, show=show, 
                        figsize=figsize, **fig_kwds) as (fig, ax):
+
+        if not len(hits_df):
+            return
 
         sample_size = min(len(hits_df), 5000)
         hits_df, scaled_col = scale_evalues(hits_df, name=feature_col,

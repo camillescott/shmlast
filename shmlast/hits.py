@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import pandas as pd
 
+
 class BestHits(object):
 
     def __init__(self, comparison_cols=['E'], query_name_col='q_name', 

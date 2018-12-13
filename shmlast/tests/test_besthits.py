@@ -1,9 +1,10 @@
 import pytest
 import pandas as pd
 
-from shmlast.tests.utils import datadir
+from shmlast.tests.utils import datadir, run_task, run_tasks
 from shmlast.hits import BestHits
 from shmlast.crbl import scale_evalues
+from shmlast.app  import CRBL
 
 
 def check_df_equals(dfA, dfB, col='E'):
@@ -53,6 +54,7 @@ def test_reciprocal_best_hits(datadir):
     
     assert check_df_equals(results_df, expected_df)
 
+
 def test_scale_evalues():
     test_df = pd.DataFrame({'E': [.1, 0.01, 0.0]})
     expected_df = pd.DataFrame({'E_scaled': [1.0, 2.0, 307.652655568]})
@@ -60,3 +62,17 @@ def test_scale_evalues():
 
     assert list(result_df[col_name]) == \
         pytest.approx(list(expected_df['E_scaled']))
+
+
+def test_crbl_tasks(tmpdir, datadir):
+    with tmpdir.as_cwd():
+        input_fa   = datadir('pom.single.fa')
+        pep_fa     = datadir('odb_subset.fa')
+        results_fn = tmpdir.join('result.csv').strpath
+        
+        crbl = CRBL(input_fa,
+                    pep_fa,
+                    results_fn)
+        result = run_tasks([tsk for tsk in crbl.tasks()], ['run'])
+
+        assert result == 0
