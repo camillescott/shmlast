@@ -9,6 +9,7 @@ import traceback
 
 from distutils import dir_util
 from pytest import fixture
+import psutil
 
 from doit.cmd_base import TaskLoader
 from doit.doit_cmd import DoitMain
@@ -19,22 +20,21 @@ try:
 except ImportError:
     from io import StringIO
 
-@fixture
-def datadir(tmpdir, request):
+N_THREADS = list(set([1, 2, psutil.cpu_count(logical = False)]))
+
+@fixture(scope='session')
+def datadir(request):
     '''
     Fixture responsible for locating the test data directory and copying it
     into a temporary directory.
     '''
-    filename   = request.module.__file__
-    test_dir   = os.path.dirname(filename)
-    data_dir   = os.path.join(test_dir, 'data')
+    test_dir = os.path.dirname(__file__)
+    data_dir = os.path.join(test_dir, 'data')
 
-    def getter(filename, as_str=True):
-        filepath = tmpdir.join(filename)
+    def getter(filename):
+        filepath = os.path.join(os.getcwd(), filename)
         shutil.copyfile(os.path.join(data_dir, filename),
-                        str(filepath))
-        if as_str:
-            return str(filepath)
+                        filepath)
         return filepath
 
     return getter
@@ -57,7 +57,7 @@ def run_tasks(tasks, args, config={'verbosity': 0}):
         @staticmethod
         def load_tasks(cmd, opt_values, pos_args):
             return tasks, config
-   
+    print('DOIT: RUN TASKS')
     return DoitMain(Loader()).run(args)
 
 

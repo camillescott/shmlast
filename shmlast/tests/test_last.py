@@ -4,16 +4,28 @@ from __future__ import print_function
 import pytest
 
 import json
+import glob
 import os
 import sys
 
-from shmlast.tests.utils import datadir, run_task, run_tasks, check_status, touch
+from shmlast.tests.utils import datadir, run_task, run_tasks, check_status, touch, N_THREADS
 from shmlast.last import lastal_task
 from shmlast.last import lastdb_task
 from shmlast.maf import MafParser
 
 LASTDB_EXTENSIONS = ['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis']
 
+
+@pytest.fixture(scope='module')
+def lastdb_dir(tmpdir_factory, datadir):
+    d = tmpdir_factory.mktemp('sacpom_lastdb')
+    with d.as_cwd():
+        data = datadir('sacPom.pep.fa')
+        task = lastdb_task(data, data, prot=True)
+        result = run_tasks([task], ['run'])
+        assert result == 0
+    
+        return d
 
 
 def test_lastdb_task_nucl(tmpdir, datadir):
@@ -98,6 +110,7 @@ def test_lastal_task_prot_x_prot(tmpdir, datadir):
         assert 'E=0' in aln
         assert 'lambda' in aln, 'lambda missing, wrong LAST version?'
 
+
 def test_lastal_task_multithreaded(tmpdir, datadir):
     with tmpdir.as_cwd():
         for n_threads in (3,4,5):
@@ -123,6 +136,27 @@ def test_lastal_task_multithreaded(tmpdir, datadir):
 
             assert all(alns_single['E'].sort_values() == \
                        alns_multi['E'].sort_values())
+
+
+@pytest.mark.parametrize('n_threads', N_THREADS,
+                         ids=lambda n: 'n_threads={0}'.format(n))
+@pytest.mark.benchmark(group='lastal')
+def test_lastal_task_large(datadir, lastdb_dir, tmpdir_factory, benchmark, n_threads):
+    with tmpdir_factory.mktemp('THREADS_{0}'.format(n_threads)).as_cwd():
+        query    = datadir('sacPom.cdna.fa')
+        database = str(lastdb_dir.join('sacPom.pep.fa'))
+        output   = 'out'
+        
+        aln_task = lastal_task(query, database, output,
+                               translate=True,
+                               cutoff=None,
+                               n_threads=n_threads)
+        result = benchmark.pedantic(run_tasks,
+                                    args=([aln_task], ['run']),
+                                    iterations=1,
+                                    rounds=1)
+        assert result == 0
+        
 
 def test_lastal_task_uptodate(tmpdir, datadir):
     with tmpdir.as_cwd():

@@ -29,7 +29,7 @@ def get_reciprocal_best_last_translated(query_maf, database_maf):
     qvd_df = MafParser(query_maf).read()
     try:
         qvd_df[['qg_name', 'q_frame']] = qvd_df.q_name.str.partition('_')[[0,2]]
-    except KeyError:
+    except (KeyError, IndexError):
         # could have been empty
         qvd_df = qvd_df.assign(qg_name=[], q_frame=[])
     qvd_df.rename(columns={'q_name': 'translated_q_name',
@@ -40,7 +40,7 @@ def get_reciprocal_best_last_translated(query_maf, database_maf):
     dvq_df = MafParser(database_maf).read()
     try:
         dvq_df[['sg_name', 'frame']] = dvq_df.s_name.str.partition('_')[[0,2]]
-    except KeyError:
+    except (KeyError, IndexError):
         dvq_df = dvq_df.assign(sg_name=[], frame=[])
     dvq_df.rename(columns={'s_name': 'translated_s_name',
                            'sg_name': 's_name'},

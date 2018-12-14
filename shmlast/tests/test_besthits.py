@@ -64,7 +64,7 @@ def test_scale_evalues():
         pytest.approx(list(expected_df['E_scaled']))
 
 
-def test_crbl_tasks(tmpdir, datadir):
+def test_crbl_tasks_empty(tmpdir, datadir):
     with tmpdir.as_cwd():
         input_fa   = datadir('pom.single.fa')
         pep_fa     = datadir('odb_subset.fa')
