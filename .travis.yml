@@ -5,7 +5,6 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.7"
 before_script:
   - curl -LO http://last.cbrc.jp/last-658.zip
   - unzip last-658.zip
