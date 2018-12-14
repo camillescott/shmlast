@@ -1,5 +1,5 @@
 {
-  "@context": "https://raw.githubusercontent.com/mbjones/codemeta/master/codemeta.jsonld",
+  "@context": "https://raw.githubusercontent.com/mbjones/codemeta/master/codemeta.json",
   "@type": "Code",
   "author": [
     {
@@ -19,5 +19,5 @@
   "keywords": "bioinformatics, orthology, alignment, LAST, BLAST, python",
   "license": "BSD-3-Clause",
   "title": "shmlast",
-  "version": "v1.3"
+  "version": "v1.4"
 }
