@@ -25,7 +25,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -n test python=$TRAVIS_PYTHON_VERSION numpy scipy pandas=0.17.0 matplotlib==1.5.1 pytest-cov pytest pytest-runner coverage sphinx nose seaborn
+  - conda create -q -n test python=$TRAVIS_PYTHON_VERSION numpy scipy pandas matplotlib pytest-cov pytest pytest-runner coverage sphinx nose seaborn
   - source activate test
   - pip install git+git://github.com/ionelmc/pytest-benchmark.git#egg=pytest-benchmark
   - pip install -U codecov 
