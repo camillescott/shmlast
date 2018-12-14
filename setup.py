@@ -44,7 +44,8 @@ def main():
                                 'scipy',
                                 'screed',
                                 'seaborn',
-                                'filelock'],
+                                'filelock',
+                                'psutil'],
             zip_safe = False,
             include_package_data = True )
             
