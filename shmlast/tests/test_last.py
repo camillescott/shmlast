@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+from ope.io.maf import MafParser
 import pytest
 
 import json
@@ -11,7 +12,6 @@ import sys
 from shmlast.tests.utils import datadir, run_task, run_tasks, check_status, touch, N_THREADS
 from shmlast.last import lastal_task
 from shmlast.last import lastdb_task
-from shmlast.maf import MafParser
 
 LASTDB_EXTENSIONS = ['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis']
 

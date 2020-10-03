@@ -32,8 +32,8 @@ def main():
             license = 'BSD',
             packages = find_packages(),
             scripts = SCRIPTS,
-            setup_requires = ['pytest-runner'],
             tests_require = ['pytest',
+                             'pytest-runner',
                              'codecov',
                              'pytest-benchmark'],
             install_requires = ['doit',
@@ -45,7 +45,7 @@ def main():
                                 'screed',
                                 'seaborn',
                                 'filelock',
-                                'psutil'],
+                                'ope'],
             zip_safe = False,
             include_package_data = True )
             

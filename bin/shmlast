@@ -13,8 +13,7 @@ def rbl_func(args):
     print(prog_string('Reciprocal Best LAST', 
                       __version__, args.action))
     rbl = RBL(args.query, args.database, args.output, 
-              n_threads=args.n_threads, cutoff=args.evalue_cutoff,
-              pbs=args.pbs)
+              n_threads=args.n_threads, cutoff=args.evalue_cutoff)
     return rbl.run(doit_args=[args.action], 
                    profile_fn=args.profile and args.profile_output)
 
@@ -24,8 +23,7 @@ def crbl_func(args):
                       __version__, args.action))
 
     crbl = CRBL(args.query, args.database, args.output,
-                n_threads=args.n_threads, cutoff=args.evalue_cutoff,
-                pbs=args.pbs)
+                n_threads=args.n_threads, cutoff=args.evalue_cutoff)
     return crbl.run(doit_args=[args.action], 
                     profile_fn=args.profile and args.profile_output)
 
@@ -75,9 +73,6 @@ def main():
                        help='If True, record CPU time.')
         p.add_argument('--profile-output', default=None,
                        help='Filename for profile results.')
-        p.add_argument('--sshloginfile', dest='pbs',  default=None,
-                       metavar='SSHLOGINFILE',
-                       help='Distribute execution across the specified nodes.')
 
         return p
 

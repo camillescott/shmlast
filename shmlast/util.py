@@ -101,26 +101,5 @@ def which(program, raise_err=True):
         return None
 
 
-def parallel_fasta(input_filename, output_filename, command, n_jobs, pbs=None):
-
-    exc       = which('parallel')
-    cmd = ['cat', input_filename, '|', exc,
-           '--block',
-           '`expr $(wc -c', input_filename, '| awk \'{{print $1}}\') / {0}`'.format(n_jobs),
-           '--round-robin',
-           '--pipe',
-           '--recstart \'>\'',
-           '--gnu']
-    if pbs is not None:
-        cmd.extend(['--sshloginfile', pbs, '--workdir $PWD'])
-    else:
-        cmd.extend(['-j', n_jobs])
-
-    if isinstance(command, list):
-        command = ' '.join(command)
-    cmd.extend([command, '>', output_filename])
-    return ' '.join(map(str, cmd))
-
-
 def hidden_fn(fn):
     return '.{0}'.format(fn)

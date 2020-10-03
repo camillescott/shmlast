@@ -8,10 +8,11 @@ import numpy as np
 import os
 import pandas as pd
 
-from .maf import MafParser
+from ope.io.maf import MafParser
+
 from .profile import profile_task
 from .util import create_doit_task as doit_task
-from .util import which, parallel_fasta, title
+from .util import which, title
 
 float_info = np.finfo(float)
 
@@ -79,7 +80,7 @@ def lastdb_task(db_fn, db_out_prefix=None, prot=True,
 @profile_task
 def lastal_task(query, db, out_fn, translate=False,
                 frameshift=LASTAL_CFG['frameshift'], cutoff=0.00001, 
-                n_threads=1, pbs=None, params=None):
+                n_threads=1, params=None):
     '''Create a pydoit task to run lastal
 
     Args:
@@ -96,7 +97,8 @@ def lastal_task(query, db, out_fn, translate=False,
     lastal_exc = which('lastal')
     name = 'lastal:{0}'.format(os.path.join(out_fn))
 
-    cmd = [lastal_exc]
+    cmd = ['ope', 'parallel', '-j', n_threads, query,
+           lastal_exc]
     if translate:
         cmd.append('-F' + str(frameshift))
     if cutoff is not None:
@@ -104,9 +106,10 @@ def lastal_task(query, db, out_fn, translate=False,
         cmd.append('-D' + str(cutoff))
     if params is not None:
         cmd.extend(params)
-    cmd.append(db)
+    cmd.extend([db, '>', out_fn])
 
-    cmd =  parallel_fasta(query, out_fn, cmd, n_threads, pbs=pbs)
+    cmd = [str(token) for token in cmd]
+    cmd = ' '.join(cmd)
 
     return {'name': name,
             'title': title,

@@ -4,13 +4,13 @@ from doit.tools import run_once, create_folder
 from doit.task import clean_targets, dict_to_task
 from doit.cmd_base import TaskLoader
 from doit.doit_cmd import DoitMain
+from ope.io.maf import MafParser
 import pandas as pd
 
 from .crbl import (get_reciprocal_best_last_translated, backmap_names,
                    scale_evalues, fit_crbh_model, filter_hits_from_model,
                    plot_crbh_fit)
 from .last import lastdb_task, lastal_task
-from .maf import MafParser
 from .profile import StartProfiler, profile_task
 from .translate import translate_task, rename_task
 from .util import ShortenedPythonAction, title, hidden_fn
@@ -55,7 +55,7 @@ class ShmlastApp(TaskLoader):
 class RBL(ShmlastApp):
 
     def __init__(self, query_fn, database_fn, output_fn=None,
-                 cutoff=.00001, n_threads=1, pbs=None, directory=None):
+                 cutoff=.00001, n_threads=1, directory=None):
         '''Generate and manage the pydoit tasks for the RBL pipeline.
 
         Args:
@@ -64,8 +64,6 @@ class RBL(ShmlastApp):
             output_fn (str): Filename to store results in.
             cutoff (float): The score cutoff.
             n_threads (int): Number of threads to run on.
-            pbs (bool): Whether to generate parallel command for PBS
-                environment.
             directory (str): The directory to run tasks in.
         '''
 
@@ -79,7 +77,6 @@ class RBL(ShmlastApp):
         self.database_name_map_fn = self.renamed_database_fn + '.names.csv'
 
         self.n_threads = n_threads
-        self.pbs = pbs
         self.cutoff = cutoff
 
         self.db_x_query_fn = '{0}.x.{1}.maf'.format(self.renamed_database_fn,
@@ -154,8 +151,7 @@ class RBL(ShmlastApp):
                            self.query_x_db_fn,
                            translate=False, 
                            cutoff=self.cutoff,
-                           n_threads=self.n_threads,
-                           pbs=self.pbs)
+                           n_threads=self.n_threads)
 
     def align_database_task(self):
         return lastal_task(self.renamed_database_fn,
@@ -163,8 +159,7 @@ class RBL(ShmlastApp):
                            self.db_x_query_fn,
                            translate=False, 
                            cutoff=self.cutoff,
-                           n_threads=self.n_threads,
-                           pbs=self.pbs)
+                           n_threads=self.n_threads)
 
 
     def tasks(self):
@@ -183,7 +178,7 @@ class RBL(ShmlastApp):
 class CRBL(RBL):
 
     def __init__(self, query_fn, database_fn, output_fn=None,
-                 model_fn=None, cutoff=.00001, n_threads=1, pbs=None):
+                 model_fn=None, cutoff=.00001, n_threads=1):
         '''Generate and manage the pydoit tasks for the CRBL pipeline.
 
         Args:
@@ -193,8 +188,6 @@ class CRBL(RBL):
             model_fn (str): Filename to store the model in.
             cutoff (float): The score cutoff.
             n_threads (int): Number of threads to run on.
-            pbs (bool): Whether to generate parallel command for PBS
-                environment.
             directory (str): The directory to run tasks in.
         '''
         prefix = '{q}.x.{d}.crbl'.format(q=path.basename(query_fn),
@@ -216,8 +209,7 @@ class CRBL(RBL):
                                     database_fn,
                                     output_fn=None,
                                     cutoff=cutoff,
-                                    n_threads=n_threads,
-                                    pbs=pbs)
+                                    n_threads=n_threads)
 
     @doit_task
     @profile_task

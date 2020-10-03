@@ -9,8 +9,9 @@ from os import path
 import pandas as pd
 import seaborn as sns
 
+from ope.io.maf import MafParser
+
 from .hits import BestHits
-from .maf import MafParser
 
 float_info = np.finfo(float)
 
