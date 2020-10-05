@@ -13,7 +13,7 @@ aligner and the pydata stack to achieve much better performance while staying in
 
 ## About
 
-Conditional Reciprocal Best Hits (CRBH) was originalyl described by [Aubry et al.
+Conditional Reciprocal Best Hits (CRBH) was originally described by [Aubry et al.
 2014](http://www.plosgenetics.org/article/info%3Adoi%2F10.1371%2Fjournal.pgen.1004365) and
 implemented in the [crb-blast](https://github.com/cboursnell/crb-blast) package. CRBH  builds 
 on the traditional Reciprocal Best Hits (RBH) method for orthology
@@ -117,15 +117,17 @@ The model plot is named `$QUERY.x.$DATABASE.crbl.model.plot.pdf` by default.
 conda is the preferred installation method. shmlast is hosted on bioconda and it can be installed
 along with its dependencies using:
 
-.. code:: bash
+```bash
     conda install shmlast -c bioconda
+```
 
 ### PyPI
 
 If you really want to avoid conda, you can install via PyPI with:
 
-.. code:: bash
-    pip install shmlast
+```bash
+pip install shmlast
+```
 
 After which you'll beed to install the third-party dependencies manually.
 
