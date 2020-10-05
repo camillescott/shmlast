@@ -25,3 +25,6 @@ data/
 
 .pytest_cache
 .coverage
+
+.tox
+.benchmarks
