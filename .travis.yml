@@ -1,34 +1,31 @@
 language: python
 sudo: required
-dist: trusty
+dist: bionic
 python:
-  - "3.6"
-  - "3.7"
-  - "3.8"
-before_script:
-  - curl -LO http://last.cbrc.jp/last-658.zip
-  - unzip last-658.zip
-  - pushd last-658 && make && sudo make install && popd
+- '3.6'
+- '3.7'
+- '3.8'
 before_install:
-  - sudo apt-get -qq update
-# command to install dependencies
+- sudo apt-get -qq update
 install:
-  - sudo apt-get update
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-  - curl -O http://ftp.gnu.org/gnu/parallel/parallel-20160822.tar.bz2
-  - tar -xvjf parallel-20160822.tar.bz2
-  - pushd parallel-20160822 && ./configure && make && sudo make install && popd
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - conda info -a
-  - conda create -q -n test python=$TRAVIS_PYTHON_VERSION numpy scipy pandas matplotlib pytest-cov pytest pytest-runner coverage sphinx nose seaborn psutil
-  - source activate test
-  - pip install git+git://github.com/ionelmc/pytest-benchmark.git#egg=pytest-benchmark
-  - pip install -U codecov 
-  - python setup.py install
-# command to run tests
-script: py.test --cov shmlast
+- sudo apt-get update
+- wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+- bash miniconda.sh -b -p $HOME/miniconda
+- export PATH="$HOME/miniconda/bin:$PATH"
+- conda config --set always_yes yes --set changeps1 no
+- conda update -q conda
+- conda info -a
+- pip install -U tox-travis tox-conda
+script: tox
 after_success: codecov --token=9f900c67-c5a8-4adc-a110-53ef2b41f224
+deploy:
+  skip_cleanup: true
+  provider: pypi
+  distributions: sdist bdist_wheel
+  user: camillescott
+  password:
+    secure: t2e8w64jcJxNa20rnoba0NGODVaT1AUcz9mHjrMb8RqK0tYwL9EXDQBEjbV62pzxabNOgIv03QsanJZVei1OaCpnzbVZwgRP/FhBMW18IfcDecNnqDcxYCSID60JpJxAw+8ZWB7MXmt+R5Em36g6a46w80hki/K1mqz4DXr28pIC4VIp35HQn9by6t6SFGLwn7w6mQGj/Xz3cMa6fr3mcXobMBDv7sDvfhoiOJ3QUxy1BakvxdJJyJKCXBWUuFr1TocJq66nlzpgq1ZywlyJfK9k/s2HMQtmfP5Kqr9kMwzx5h0cjovK6b6xVQi1ajFLB68PMb/A6frYrSSoV+KrZBHQbhi4V3Ltrv18jh9wOzJqI8w5E9okF/Q4fDOfpmngTedm9sW2r6Ekr8ICjBVjsJDjcCQec3HAXnXUNc/JjIdVQkKzm1f1REQJ9lBhPZv3R5McFQ4Jd6rsUtc0gs/1AUXYlkN1sSLR9TVdCBEFe00t2AvLRoLr/3h60GjneBT/9t1rhZQ0aPXPaV3/DR8zbYCxMkkEPUmYuXjxSF5g+qAnBS1KfzSGww8bDbJ8PN1cIt53VE52JFR4EXEZd/D+9ayFA2fzHfPzKptN4qc8KZ3tbiri7a2wEXJXlV1uS6FPAXeAJPmt5aX1aesamyfJgskrB/9yEiGiV6pGQbnASog=
+  on:
+    tags: true
+    repo: camillescott/shmlast
+    python: 3.8
