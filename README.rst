@@ -130,7 +130,7 @@ following columns:
 To fit the model, the e-values are first scaled to a more suitable range
 using the equation ``Es = -log10(E)``, where ``Es`` is the scaled
 e-value. e-values of 0 are set to an arbitrarily small value to allow
-for log-scaling. The *fit* column of the model is this scaled value.
+for log-scaling. The *E\_scaled* column of the model is this scaled value.
 
 The model plot is named ``$QUERY.x.$DATABASE.crbl.model.plot.pdf`` by
 default.
