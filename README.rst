@@ -145,6 +145,7 @@ conda is the preferred installation method. shmlast is hosted on bioconda and it
 along with its dependencies using:
 
 .. code:: bash
+
     conda install shmlast -c bioconda
 
 PyPI
@@ -153,6 +154,7 @@ PyPI
 If you really want to avoid conda, you can install via PyPI with:
 
 .. code:: bash
+
     pip install shmlast
 
 After which you'll beed to install the third-party dependencies manually.
