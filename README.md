@@ -191,6 +191,21 @@ There is currently an issue with IUPAC codes in RNA. This will be fixed soon.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+If you already have matplotlib > 1.5.1 installed (from a virtualenv):
+
+```
+pip install https://pypi.python.org/packages/source/m/matplotlib/matplotlib-1.5.1.tar.gz
+```
+
+Check that it worked:
+
+```
+python
+import matplotlib
+matplotlib.__version__
+quit()
+```
+
 ## References
 
 1. Aubry S, Kelly S, Kümpers BMC, Smith-Unna RD, Hibberd JM (2014) Deep Evolutionary Comparison of
